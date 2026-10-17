@@ -150,7 +150,8 @@ server:
 ## Where scsynth 3.14.1 and the reference differ
 
 - `/notify` always replies `/done /notify clientID maxLogins` to a
-  registration, also without a client ID in the command. A second
+  registration, also without a client ID in the command. The crate also
+  decodes the reply without `maxLogins`, which the reference allows. A second
   registration fails with `notify: already registered`, and the existing
   ID (`SC_SequencedCommand.cpp:1241-1282`).
 - `/error -2` undoes one `/error -1` in a bundle. It cannot turn posting

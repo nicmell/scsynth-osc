@@ -21,7 +21,7 @@ fn a_registration_names_the_client_and_the_login_limit() {
     let reply = bytes("/done", vec![Text("/notify".to_owned()), Int(0), Int(4)]);
     let done = Done::Notify {
         client_id: 0,
-        max_logins: 4,
+        max_logins: Some(4),
     };
     assert_eq!(Reply::decode(&reply), Ok(Reply::Done(done)));
 }

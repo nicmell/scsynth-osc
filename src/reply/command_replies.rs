@@ -21,12 +21,14 @@ use crate::types::BufferId;
 pub enum Done {
     /// `/done /quit`.
     Quit,
-    /// `/done /notify clientID maxLogins`: the sender is registered.
+    /// `/done /notify clientID [maxLogins]`: the sender is registered.
     Notify {
         /// The ID of the sender among the clients of the server.
         client_id: i32,
-        /// How many clients the server takes at once.
-        max_logins: i32,
+        /// How many clients the server takes at once. scsynth 3.14.1 always
+        /// sends it. The reference makes it optional, and supernova leaves it
+        /// out.
+        max_logins: Option<i32>,
     },
     /// `/done /notify`: the registration of the sender ended.
     NotifyOff,
@@ -134,7 +136,9 @@ impl Payload for Done {
             } => {
                 writer.string("/notify");
                 writer.int(*client_id);
-                writer.int(*max_logins);
+                if let Some(max_logins) = max_logins {
+                    writer.int(*max_logins);
+                }
             }
             Self::NotifyOff => writer.string("/notify"),
             Self::DRecv => writer.string("/d_recv"),
@@ -154,7 +158,7 @@ impl Payload for Done {
             "/quit" => Self::Quit,
             "/notify" if reader.remains() => Self::Notify {
                 client_id: reader.int()?,
-                max_logins: reader.int()?,
+                max_logins: reader.optional_int()?,
             },
             "/notify" => Self::NotifyOff,
             "/d_recv" => Self::DRecv,
@@ -227,10 +231,19 @@ mod tests {
         assert_wire(&Reply::Done(Done::Quit), "/done", vec![text("/quit")]);
         let registered = Done::Notify {
             client_id: 0,
-            max_logins: 32,
+            max_logins: Some(32),
         };
         let wire = vec![text("/notify"), Int(0), Int(32)];
         assert_wire(&Reply::Done(registered), "/done", wire);
+        let supernova = Done::Notify {
+            client_id: 0,
+            max_logins: None,
+        };
+        assert_wire(
+            &Reply::Done(supernova),
+            "/done",
+            vec![text("/notify"), Int(0)],
+        );
         assert_wire(
             &Reply::Done(Done::NotifyOff),
             "/done",
