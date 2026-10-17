@@ -26,6 +26,14 @@ pub(crate) fn tag(value: &OscType) -> char {
     }
 }
 
+/// `value` as an OSC string: up to its first NUL byte, because an OSC
+/// string ends at the first one. scsynth and rosc read the bytes after it
+/// as the next arguments.
+pub(crate) fn osc_string(value: &str) -> OscType {
+    let end = value.find('\0').unwrap_or(value.len());
+    OscType::String(value[..end].to_owned())
+}
+
 /// A cursor over the arguments of one message. It takes each argument only
 /// in the type that the protocol gives it.
 pub(crate) struct Reader<'a> {
@@ -133,6 +141,34 @@ impl<'a> Reader<'a> {
         }
     }
 
+    /// An int that stands for a flag: 1 or 0.
+    pub(crate) fn flag(&mut self) -> Result<bool, DecodeError> {
+        self.coded("1 or 0", |code| match code {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        })
+    }
+
+    /// An int that counts the items after it: 0 or more.
+    pub(crate) fn count(&mut self) -> Result<usize, DecodeError> {
+        let index = self.index;
+        let count = self.int()?;
+        usize::try_from(count).map_err(|_| self.invalid(index, format!("{count} is no count")))
+    }
+
+    /// Every argument left, read by `read` until none is left.
+    pub(crate) fn rest<T>(
+        &mut self,
+        read: impl Fn(&mut Self) -> Result<T, DecodeError>,
+    ) -> Result<Vec<T>, DecodeError> {
+        let mut values = Vec::new();
+        while self.remains() {
+            values.push(read(self)?);
+        }
+        Ok(values)
+    }
+
     /// An int that `from_code` knows.
     pub(crate) fn coded<T>(
         &mut self,
@@ -174,11 +210,20 @@ impl Writer {
     }
 
     pub(crate) fn string(&mut self, value: &str) {
-        self.args.push(OscType::String(value.to_owned()));
+        self.args.push(osc_string(value));
     }
 
     pub(crate) fn blob(&mut self, value: Vec<u8>) {
         self.args.push(OscType::Blob(value));
+    }
+
+    pub(crate) fn flag(&mut self, value: bool) {
+        self.int(i32::from(value));
+    }
+
+    /// The length of a list, as the int that counts it.
+    pub(crate) fn count(&mut self, len: usize) {
+        self.int(i32::try_from(len).expect("an OSC packet holds fewer than 2^31 arguments"));
     }
 
     pub(crate) fn push(&mut self, value: OscType) {
@@ -241,6 +286,11 @@ macro_rules! messages {
             }
 
             /// The bytes of the message, as one OSC message.
+            ///
+            /// # Panics
+            ///
+            /// On a list of more than `i32::MAX` values, which no OSC packet
+            /// holds.
             pub fn encode(&self) -> Vec<u8> {
                 $crate::packet::encode_message(<Self as $crate::codec::Message>::to_osc(self))
             }

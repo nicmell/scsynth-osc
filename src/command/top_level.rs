@@ -23,20 +23,15 @@ pub struct Notify {
 
 impl Payload for Notify {
     fn write(&self, writer: &mut Writer) {
-        writer.int(i32::from(self.on));
+        writer.flag(self.on);
         if let Some(client_id) = self.client_id {
             writer.int(client_id);
         }
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let on = reader.coded("1 or 0", |code| match code {
-            0 => Some(false),
-            1 => Some(true),
-            _ => None,
-        })?;
         Ok(Self {
-            on,
+            on: reader.flag()?,
             client_id: reader.optional_int()?,
         })
     }

@@ -107,11 +107,9 @@ impl Payload for DFree {
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let mut names = Vec::new();
-        while reader.remains() {
-            names.push(reader.string()?);
-        }
-        Ok(Self { names })
+        Ok(Self {
+            names: reader.rest(Reader::string)?,
+        })
     }
 }
 

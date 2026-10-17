@@ -3,6 +3,9 @@
 //! client registered with `/notify`. scsynth never wraps them in bundles.
 
 pub mod command_replies;
+pub mod group;
+pub mod node_notification;
+pub mod synth;
 pub mod top_level;
 
 use crate::codec::messages;
@@ -24,5 +27,24 @@ messages! {
         /// `/synced`: the answer to `/sync`, once every asynchronous command
         /// received before it completed.
         "/synced" => Synced(SyncId),
+        /// `/n_go`: a node started.
+        "/n_go" => NGo(node_notification::NodeState),
+        /// `/n_end`: a node ended, and is freed.
+        "/n_end" => NEnd(node_notification::NodeState),
+        /// `/n_off`: a node turned off.
+        "/n_off" => NOff(node_notification::NodeState),
+        /// `/n_on`: a node turned on.
+        "/n_on" => NOn(node_notification::NodeState),
+        /// `/n_move`: a node moved.
+        "/n_move" => NMove(node_notification::NodeState),
+        /// `/n_info`: the answer to `/n_query`.
+        "/n_info" => NInfo(node_notification::NodeState),
+        /// `/n_set`: the answer to `/s_get`.
+        "/n_set" => NSet(synth::NSet),
+        /// `/n_setn`: the answer to `/s_getn`.
+        "/n_setn" => NSetn(synth::NSetn),
+        /// `/g_queryTree.reply`: the answer to `/g_queryTree`, one per
+        /// group.
+        "/g_queryTree.reply" => GQueryTreeReply(group::GQueryTreeReply),
     }
 }

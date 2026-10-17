@@ -1,6 +1,9 @@
 //! The commands that a client sends to scsynth, in the sections of the
 //! Server Command Reference.
 
+pub mod group;
+pub mod node;
+pub mod synth;
 pub mod synth_def;
 pub mod top_level;
 
@@ -45,6 +48,62 @@ messages! {
         "/d_loadDir" => DLoadDir(synth_def::DLoadDir),
         /// `/d_free`: removes synth definitions.
         "/d_free" => DFree(synth_def::DFree),
+        /// `/n_free`: frees nodes.
+        "/n_free" => NFree(node::NFree),
+        /// `/n_run`: turns nodes on or off.
+        "/n_run" => NRun(node::NRun),
+        /// `/n_set`: sets controls of a node.
+        "/n_set" => NSet(node::NSet),
+        /// `/n_setn`: sets ranges of controls of a node.
+        "/n_setn" => NSetn(node::NSetn),
+        /// `/n_fill`: sets ranges of controls of a node to one value each.
+        "/n_fill" => NFill(node::NFill),
+        /// `/n_map`: maps controls of a node to control buses.
+        "/n_map" => NMap(node::NMap),
+        /// `/n_mapn`: maps ranges of controls of a node to control buses.
+        "/n_mapn" => NMapn(node::NMapn),
+        /// `/n_mapa`: maps controls of a node to audio buses.
+        "/n_mapa" => NMapa(node::NMapa),
+        /// `/n_mapan`: maps ranges of controls of a node to audio buses.
+        "/n_mapan" => NMapan(node::NMapan),
+        /// `/n_before`: moves nodes before others.
+        "/n_before" => NBefore(node::NBefore),
+        /// `/n_after`: moves nodes after others.
+        "/n_after" => NAfter(node::NAfter),
+        /// `/n_query`: the server sends `/n_info` for nodes.
+        "/n_query" => NQuery(node::NQuery),
+        /// `/n_trace`: the server prints what nodes do for one control
+        /// period.
+        "/n_trace" => NTrace(node::NTrace),
+        /// `/n_order`: moves nodes next to a target, in order.
+        "/n_order" => NOrder(node::NOrder),
+        /// `/s_new`: creates a synth.
+        "/s_new" => SNew(synth::SNew),
+        /// `/s_get`: the server replies `/n_set` with values of controls.
+        "/s_get" => SGet(synth::SGet),
+        /// `/s_getn`: the server replies `/n_setn` with values of ranges of
+        /// controls.
+        "/s_getn" => SGetn(synth::SGetn),
+        /// `/s_noid`: synths give up their IDs.
+        "/s_noid" => SNoid(synth::SNoid),
+        /// `/g_new`: creates groups.
+        "/g_new" => GNew(group::GNew),
+        /// `/p_new`: creates parallel groups.
+        "/p_new" => PNew(group::PNew),
+        /// `/g_head`: moves nodes to the head of groups.
+        "/g_head" => GHead(group::GHead),
+        /// `/g_tail`: moves nodes to the tail of groups.
+        "/g_tail" => GTail(group::GTail),
+        /// `/g_freeAll`: frees every node in groups.
+        "/g_freeAll" => GFreeAll(group::GFreeAll),
+        /// `/g_deepFree`: frees every synth in groups, and in the groups
+        /// inside them.
+        "/g_deepFree" => GDeepFree(group::GDeepFree),
+        /// `/g_dumpTree`: the server prints the trees of groups.
+        "/g_dumpTree" => GDumpTree(group::GDumpTree),
+        /// `/g_queryTree`: the server replies `/g_queryTree.reply` for
+        /// groups.
+        "/g_queryTree" => GQueryTree(group::GQueryTree),
     }
 }
 

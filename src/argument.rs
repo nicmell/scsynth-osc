@@ -2,6 +2,8 @@
 
 use rosc::OscType;
 
+use crate::codec::osc_string;
+
 /// One argument that scsynth hands to a plugin as it is: an argument of
 /// `/cmd`, of `/u_cmd`, or of a plugin's fill for `/b_gen`. The variants are
 /// the types that scsynth's argument reader takes without losing its place.
@@ -30,7 +32,7 @@ impl Argument {
             Self::Int(value) => OscType::Int(*value),
             Self::Float(value) => OscType::Float(*value),
             Self::Double(value) => OscType::Double(*value),
-            Self::String(value) => OscType::String(value.clone()),
+            Self::String(value) => osc_string(value),
             Self::Blob(value) => OscType::Blob(value.clone()),
         }
     }

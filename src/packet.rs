@@ -79,6 +79,10 @@ pub struct Bundle<T> {
 
 impl<T: Message> Packet<T> {
     /// The bytes of the packet.
+    ///
+    /// # Panics
+    ///
+    /// On a list of more than `i32::MAX` values, which no OSC packet holds.
     pub fn encode(&self) -> Vec<u8> {
         encode_osc(&self.to_osc())
     }

@@ -2,8 +2,10 @@
 
 use rosc::OscType::{Int, String as Text};
 use rosc::{OscMessage, OscPacket, OscType};
-use scsynth_osc::Reply;
 use scsynth_osc::reply::command_replies::{Done, Fail};
+use scsynth_osc::reply::group::{GQueryTreeReply, TreeGroup, TreeNode};
+use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
+use scsynth_osc::{NodeId, Reply};
 
 fn bytes(address: &str, args: Vec<OscType>) -> Vec<u8> {
     rosc::encoder::encode(&OscPacket::Message(OscMessage {
@@ -59,4 +61,53 @@ fn a_failure_names_its_command() {
         value: None,
     };
     assert_eq!(Reply::decode(&reply), Ok(Reply::Fail(fail)));
+}
+
+/// Verbatim from scsynth 3.14.1: a group 7001 in group 7000.
+#[test]
+fn a_node_notification_places_its_node() {
+    let state = NodeState {
+        node: NodeId(7001),
+        parent: Some(NodeId(7000)),
+        prev: None,
+        next: None,
+        kind: NodeKind::Group {
+            head: None,
+            tail: None,
+        },
+    };
+    for (address, reply) in [
+        ("/n_go", Reply::NGo(state)),
+        ("/n_end", Reply::NEnd(state)),
+        ("/n_info", Reply::NInfo(state)),
+    ] {
+        let args = [7001, 7000, -1, -1, 1, -1, -1].map(Int).to_vec();
+        assert_eq!(Reply::decode(&bytes(address, args)), Ok(reply));
+    }
+}
+
+/// Verbatim from scsynth 3.14.1: an empty group, and a group with an empty
+/// group in it.
+#[test]
+fn a_tree_holds_its_groups() {
+    let empty = |id| TreeGroup {
+        id: NodeId(id),
+        children: vec![],
+    };
+    let nested = TreeGroup {
+        id: NodeId(1000),
+        children: vec![TreeNode::Group(empty(1001))],
+    };
+    for (args, tree) in [
+        (vec![0, 2000, 0], empty(2000)),
+        (vec![0, 1000, 1, 1001, 0], nested),
+    ] {
+        let reply = bytes("/g_queryTree.reply", args.into_iter().map(Int).collect());
+        assert_eq!(
+            Reply::decode(&reply),
+            Ok(Reply::GQueryTreeReply(GQueryTreeReply::WithoutControls(
+                tree
+            )))
+        );
+    }
 }
