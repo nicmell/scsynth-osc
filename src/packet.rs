@@ -77,6 +77,21 @@ pub struct Bundle<T> {
     pub packets: Vec<Packet<T>>,
 }
 
+impl<T> Packet<T> {
+    /// The messages of the packet, in order, its bundles flattened.
+    pub fn into_messages(self) -> Vec<T> {
+        let mut messages = Vec::new();
+        let mut pending = vec![self];
+        while let Some(packet) = pending.pop() {
+            match packet {
+                Self::Message(message) => messages.push(message),
+                Self::Bundle(bundle) => pending.extend(bundle.packets.into_iter().rev()),
+            }
+        }
+        messages
+    }
+}
+
 impl<T: Message> Packet<T> {
     /// The bytes of the packet.
     ///
@@ -141,5 +156,36 @@ pub(crate) fn decode_message(bytes: &[u8]) -> Result<OscMessage, DecodeError> {
     match decode_osc(bytes)? {
         OscPacket::Message(message) => Ok(message),
         OscPacket::Bundle(_) => Err(DecodeError::new("", DecodeErrorKind::Bundle)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Command;
+    use crate::command::top_level::SyncId;
+
+    #[test]
+    fn the_messages_of_a_packet_flatten_in_wire_order() {
+        let sync = |id| Packet::Message(Command::Sync(SyncId(id)));
+        let inner = Packet::Bundle(Bundle {
+            time: Timetag::IMMEDIATELY,
+            packets: vec![sync(2), sync(3)],
+        });
+        let outer = Packet::Bundle(Bundle {
+            time: Timetag {
+                seconds: 7,
+                fraction: 9,
+            },
+            packets: vec![sync(1), inner, sync(4)],
+        });
+        let decoded = Packet::<Command>::decode(&outer.encode()).expect("decodes");
+        assert_eq!(
+            decoded.into_messages(),
+            (1..=4)
+                .map(|id| Command::Sync(SyncId(id)))
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(sync(5).into_messages(), [Command::Sync(SyncId(5))]);
     }
 }
