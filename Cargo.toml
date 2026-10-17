@@ -1,0 +1,23 @@
+[package]
+name = "scsynth-osc"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+description = "The OSC protocol of scsynth, the SuperCollider synthesis server: every command and reply of the Server Command Reference, typed, and encoded and decoded strictly."
+readme = "README.md"
+keywords = ["supercollider", "scsynth", "osc", "audio", "synthesis"]
+categories = ["multimedia::audio", "encoding", "network-programming"]
+
+[dependencies]
+rosc.workspace = true
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[features]
+serde = ["dep:serde"]
+
+[lints]
+workspace = true
