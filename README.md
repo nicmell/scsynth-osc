@@ -207,7 +207,7 @@ server:
 ## Tests
 
 The unit tests check the wire form of every message, and
-`cargo test -p scsynth-osc --all-features` runs them all.
+`cargo test --all-features` runs them all.
 
 `tests/conformance.rs` checks the crate against a real scsynth. The
 server must read each command as the crate means it, and each reply must
@@ -218,7 +218,7 @@ scsynth that no other client uses:
 scsynth -u 57210 -B 127.0.0.1 &
 SCSYNTH_ADDR=127.0.0.1:57210 \
 SCSYNTH_SYNTHDEF=<supercollider>/testsuite/server/supernova/default.scsyndef \
-cargo test -p scsynth-osc --test conformance -- --ignored
+cargo test --test conformance -- --ignored
 ```
 
 The tests use the nodes from 2000, the buffers 30 and 31 and the control
