@@ -141,6 +141,10 @@ impl OrderAction {
 }
 
 /// A control of a synth: by its index, or by its name.
+///
+/// A range of controls that starts at a name stays inside the array of
+/// controls of that name. A range that starts at an index runs on through
+/// the controls after it.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
@@ -349,8 +353,9 @@ pub enum ControlValue {
     /// A bus for the control to read.
     Bus(BusMapping),
     /// Values for the control and for the controls after it, in order, as
-    /// `/n_setn` sets them. The array has one level: scsynth reads a nested
-    /// array differently in `/s_new` and in `/n_set`.
+    /// `/n_setn` sets them: see [`Control`]. The array has one level:
+    /// scsynth reads a nested array differently in `/s_new` and in
+    /// `/n_set`.
     Array(Vec<ArrayElement>),
 }
 
