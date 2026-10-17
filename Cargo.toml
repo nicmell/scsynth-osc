@@ -10,6 +10,7 @@ repository = "https://github.com/nicmell/scsynth-osc"
 readme = "README.md"
 keywords = ["supercollider", "scsynth", "osc", "audio", "synthesis"]
 categories = ["multimedia::audio", "encoding", "network-programming"]
+include = ["/src", "/tests", "/README.md", "/CHANGELOG.md", "/LICENSE-APACHE", "/LICENSE-MIT"]
 
 [dependencies]
 rosc = { version = "0.11.4", default-features = false }
