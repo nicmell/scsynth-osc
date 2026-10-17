@@ -1,6 +1,9 @@
 //! The JSON form of the messages, with the feature `serde`.
 #![cfg(feature = "serde")]
 
+use scsynth_osc::command::buffer::{BGen, BWrite, HeaderFormat, SampleFormat};
+use scsynth_osc::command::buffer_fill::{BufferFill, WaveFillFlags};
+use scsynth_osc::command::control_bus::CSet;
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::top_level::{DumpMode, Notify, SyncId};
 use scsynth_osc::reply::group::{
@@ -9,8 +12,8 @@ use scsynth_osc::reply::group::{
 use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
 use scsynth_osc::reply::top_level::StatusReply;
 use scsynth_osc::{
-    AddAction, ArrayElement, BusMapping, Command, Control, ControlSetting, ControlValue, NewNodeId,
-    NodeId, Reply,
+    AddAction, ArrayElement, BufferId, BusMapping, Command, Control, ControlSetting, ControlValue,
+    IndexValue, NewNodeId, NodeId, Number, Reply,
 };
 use serde_json::json;
 
@@ -164,5 +167,75 @@ fn a_tree_nests_its_groups() {
                 ]}}
             ]
         }}}),
+    );
+}
+
+#[test]
+fn a_buffer_command_names_its_buffer_and_formats() {
+    let write = BWrite {
+        buffer: BufferId::from(4),
+        path: "a.wav".to_owned(),
+        header: HeaderFormat::Wav,
+        sample: SampleFormat::Int24,
+        frames: -1,
+        start_frame: 0,
+        leave_open: false,
+        completion: None,
+    };
+    round_trip(
+        &Command::BWrite(write),
+        json!({"address": "/b_write", "args": {
+            "buffer": 4, "path": "a.wav", "header": "wav", "sample": "int24",
+            "frames": -1, "start_frame": 0, "leave_open": false, "completion": null
+        }}),
+    );
+    let fill = BGen {
+        buffer: BufferId::from(4),
+        fill: BufferFill::Sine1 {
+            flags: WaveFillFlags {
+                normalize: true,
+                wavetable: false,
+                clear: true,
+            },
+            amplitudes: vec![1.0, 0.5],
+        },
+    };
+    round_trip(
+        &Command::BGen(fill),
+        json!({"address": "/b_gen", "args": {"buffer": 4, "fill": {"sine1": {
+            "flags": {"normalize": true, "wavetable": false, "clear": true},
+            "amplitudes": [1.0, 0.5]
+        }}}}),
+    );
+    let negative = json!({"address": "/b_free", "args": {"buffer": -1, "completion": null}});
+    assert!(serde_json::from_value::<Command>(negative).is_err());
+    let channels: Vec<u16> = (0..33).collect();
+    let read = json!({"address": "/b_allocReadChannel", "args": {
+        "buffer": 4, "path": "a.wav", "start_frame": 0, "frames": -1,
+        "channels": channels, "completion": null
+    }});
+    assert!(serde_json::from_value::<Command>(read).is_err());
+}
+
+#[test]
+fn a_bus_value_is_an_int_or_a_float() {
+    let set = CSet {
+        buses: vec![
+            IndexValue {
+                index: 0,
+                value: Number::Int(1),
+            },
+            IndexValue {
+                index: 1,
+                value: Number::Float(0.5),
+            },
+        ],
+    };
+    round_trip(
+        &Command::CSet(set),
+        json!({"address": "/c_set", "args": {"buses": [
+            {"index": 0, "value": 1},
+            {"index": 1, "value": 0.5}
+        ]}}),
     );
 }

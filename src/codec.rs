@@ -141,6 +141,44 @@ impl<'a> Reader<'a> {
         }
     }
 
+    /// The next argument, an int, or `default` when the message ends here.
+    pub(crate) fn int_or(&mut self, default: i32) -> Result<i32, DecodeError> {
+        if self.remains() {
+            self.int()
+        } else {
+            Ok(default)
+        }
+    }
+
+    /// The next argument, a float, or `default` when the message ends here.
+    pub(crate) fn float_or(&mut self, default: f32) -> Result<f32, DecodeError> {
+        if self.remains() {
+            self.float()
+        } else {
+            Ok(default)
+        }
+    }
+
+    /// The next argument, a flag, or `default` when the message ends here.
+    pub(crate) fn flag_or(&mut self, default: bool) -> Result<bool, DecodeError> {
+        if self.remains() {
+            self.flag()
+        } else {
+            Ok(default)
+        }
+    }
+
+    /// A string that `from_name` knows.
+    pub(crate) fn named<T>(
+        &mut self,
+        expected: &'static str,
+        from_name: fn(&str) -> Option<T>,
+    ) -> Result<T, DecodeError> {
+        let index = self.index;
+        let name = self.string()?;
+        from_name(&name).ok_or_else(|| self.invalid(index, format!("{name:?} is not {expected}")))
+    }
+
     /// An int that stands for a flag: 1 or 0.
     pub(crate) fn flag(&mut self) -> Result<bool, DecodeError> {
         self.coded("1 or 0", |code| match code {
@@ -391,3 +429,50 @@ macro_rules! coded {
 }
 
 pub(crate) use coded;
+
+/// Declares an enum of the values that one string argument can name.
+/// Decoding ignores case, as scsynth does, and takes the other names of a
+/// value after `|`. Encoding writes the first name.
+macro_rules! named {
+    (
+        $(#[$meta:meta])*
+        $name:ident {
+            $(
+                $(#[$variant_meta:meta])*
+                $variant:ident = $text:literal $(| $alias:literal)*
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        pub enum $name {
+            $(
+                $(#[$variant_meta])*
+                #[cfg_attr(feature = "serde", serde(rename = $text))]
+                $variant,
+            )*
+        }
+
+        impl $name {
+            /// The name that travels on the wire.
+            pub fn name(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $text,)*
+                }
+            }
+
+            /// The value that `name` names, in any case.
+            pub fn from_name(name: &str) -> Option<Self> {
+                $(
+                    if name.eq_ignore_ascii_case($text) $(|| name.eq_ignore_ascii_case($alias))* {
+                        return Some(Self::$variant);
+                    }
+                )*
+                None
+            }
+        }
+    };
+}
+
+pub(crate) use named;

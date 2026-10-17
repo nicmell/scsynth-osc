@@ -18,6 +18,7 @@ pub use error::{DecodeError, DecodeErrorKind};
 pub use packet::{Bundle, Packet, Timetag};
 pub use reply::Reply;
 pub use types::{
-    AddAction, ArrayElement, BusMapping, Control, ControlSetting, ControlValue, NewNodeId, NodeId,
-    NotABusMapping, Number, OrderAction,
+    AddAction, ArrayElement, BufferId, BusMapping, Control, ControlSetting, ControlValue,
+    IndexFill, IndexRange, IndexValue, IndexValues, NewNodeId, NodeId, NotABusMapping, Number,
+    OrderAction,
 };

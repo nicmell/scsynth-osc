@@ -50,3 +50,12 @@ pub(crate) fn decode_error<T: Message + Debug>(
     assert_eq!(error.address(), address);
     error.kind().clone()
 }
+
+/// `address` with `args`, decoded as a `T`.
+pub(crate) fn decode<T: Message + Debug>(address: &str, args: Vec<OscType>) -> T {
+    let message = OscMessage {
+        addr: address.to_owned(),
+        args,
+    };
+    T::from_osc(&message).expect("the message decodes")
+}

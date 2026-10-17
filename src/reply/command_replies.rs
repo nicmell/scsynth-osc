@@ -3,6 +3,7 @@
 
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
+use crate::types::BufferId;
 
 /// The arguments of `/done`: which asynchronous command completed. scsynth
 /// sends it to the sender of the command, once the completion message of
@@ -39,8 +40,8 @@ pub enum Done {
     Buffer {
         /// The command.
         command: BufferCommand,
-        /// The buffer number, as the command gave it.
-        buffer: i32,
+        /// The buffer, as the command named it.
+        buffer: BufferId,
     },
     /// `/done <name>`: an asynchronous command of a plugin completed. The
     /// name is the plugin's choice, with or without a leading slash.
@@ -141,7 +142,7 @@ impl Payload for Done {
             Self::DLoadDir => writer.string("/d_loadDir"),
             Self::Buffer { command, buffer } => {
                 writer.string(command.address());
-                writer.int(*buffer);
+                buffer.write(writer);
             }
             Self::Plugin { name } => writer.string(name),
         }
@@ -162,7 +163,7 @@ impl Payload for Done {
             other => match BufferCommand::from_address(other) {
                 Some(command) => Self::Buffer {
                     command,
-                    buffer: reader.int()?,
+                    buffer: BufferId::read(reader)?,
                 },
                 None => Self::Plugin { name },
             },
@@ -243,7 +244,10 @@ mod tests {
             vec![text("/d_loadDir")],
         );
         for command in BufferCommand::ALL {
-            let done = Done::Buffer { command, buffer: 4 };
+            let done = Done::Buffer {
+                command,
+                buffer: BufferId::from(4),
+            };
             let wire = vec![text(command.address()), Int(4)];
             assert_wire(&Reply::Done(done), "/done", wire);
         }

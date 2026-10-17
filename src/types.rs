@@ -480,6 +480,212 @@ impl ControlSetting {
     }
 }
 
+/// A buffer of the server: its index, from 0.
+///
+/// scsynth 3.14.1 does not check an index at or above its number of
+/// buffers, set by `-b` and 1024 by default: it acts on buffer 0, or past
+/// the end of its arrays. The crate cannot check that, because it does not
+/// know the number. scsynth reads a negative index as such an index, so the
+/// crate refuses it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(try_from = "i32", into = "i32")
+)]
+pub struct BufferId(i32);
+
+impl BufferId {
+    /// `index`, when it is 0 or more.
+    pub fn new(index: i32) -> Option<Self> {
+        (index >= 0).then_some(Self(index))
+    }
+
+    /// The index.
+    pub fn get(self) -> i32 {
+        self.0
+    }
+
+    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        let index = reader.index();
+        let buffer = reader.int()?;
+        Self::new(buffer)
+            .ok_or_else(|| reader.invalid(index, format!("{buffer} is no buffer: 0 or more")))
+    }
+
+    pub(crate) fn write(self, writer: &mut Writer) {
+        writer.int(self.0);
+    }
+}
+
+impl TryFrom<i32> for BufferId {
+    type Error = i32;
+
+    fn try_from(index: i32) -> Result<Self, i32> {
+        Self::new(index).ok_or(index)
+    }
+}
+
+impl From<BufferId> for i32 {
+    fn from(buffer: BufferId) -> Self {
+        buffer.0
+    }
+}
+
+impl From<u16> for BufferId {
+    fn from(index: u16) -> Self {
+        Self(i32::from(index))
+    }
+}
+
+/// A value of a buffer or of a control bus: an `f32`, or a [`Number`]
+/// where the reference takes an int too.
+pub(crate) trait Value: Copy {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError>;
+
+    fn write(self, writer: &mut Writer);
+}
+
+impl Value for f32 {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        reader.float()
+    }
+
+    fn write(self, writer: &mut Writer) {
+        writer.float(self);
+    }
+}
+
+impl Value for Number {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Number::read(reader)
+    }
+
+    fn write(self, writer: &mut Writer) {
+        Number::write(self, writer);
+    }
+}
+
+/// One repeated group of arguments of a buffer or control bus message.
+pub(crate) trait Element: Sized {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError>;
+
+    fn write(&self, writer: &mut Writer);
+}
+
+/// Writes each element.
+pub(crate) fn write_all<T: Element>(writer: &mut Writer, elements: &[T]) {
+    for element in elements {
+        element.write(writer);
+    }
+}
+
+/// A sample of a buffer, or a control bus, and its value.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct IndexValue<V = f32> {
+    /// The index of the sample, or of the bus.
+    pub index: i32,
+    /// The value.
+    pub value: V,
+}
+
+impl<V: Value> Element for IndexValue<V> {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            index: reader.int()?,
+            value: V::read(reader)?,
+        })
+    }
+
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.index);
+        self.value.write(writer);
+    }
+}
+
+/// Consecutive samples of a buffer, or control buses, and their values.
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct IndexValues<V = f32> {
+    /// The index of the first sample, or of the first bus.
+    pub start: i32,
+    /// The values, one per sample or bus.
+    pub values: Vec<V>,
+}
+
+impl<V: Value> Element for IndexValues<V> {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        let start = reader.int()?;
+        let count = reader.count()?;
+        let values = (0..count)
+            .map(|_| V::read(reader))
+            .collect::<Result<_, _>>()?;
+        Ok(Self { start, values })
+    }
+
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.start);
+        writer.count(self.values.len());
+        for value in &self.values {
+            value.write(writer);
+        }
+    }
+}
+
+/// Consecutive samples of a buffer, or control buses, and the one value
+/// for them all.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct IndexFill<V = f32> {
+    /// The index of the first sample, or of the first bus.
+    pub start: i32,
+    /// The number of samples, or of buses.
+    pub count: i32,
+    /// The value.
+    pub value: V,
+}
+
+impl<V: Value> Element for IndexFill<V> {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            start: reader.int()?,
+            count: reader.int()?,
+            value: V::read(reader)?,
+        })
+    }
+
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.start);
+        writer.int(self.count);
+        self.value.write(writer);
+    }
+}
+
+/// Consecutive samples of a buffer, or control buses, to read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct IndexRange {
+    /// The index of the first sample, or of the first bus.
+    pub start: i32,
+    /// The number of samples, or of buses.
+    pub count: i32,
+}
+
+impl Element for IndexRange {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            start: reader.int()?,
+            count: reader.int()?,
+        })
+    }
+
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.start);
+        writer.int(self.count);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

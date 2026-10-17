@@ -1,11 +1,15 @@
 //! The commands that a client sends to scsynth, in the sections of the
 //! Server Command Reference.
 
+pub mod buffer;
+pub mod buffer_fill;
+pub mod control_bus;
 pub mod group;
 pub mod node;
 pub mod synth;
 pub mod synth_def;
 pub mod top_level;
+pub mod unit_generator;
 
 use rosc::{OscBundle, OscPacket, OscType};
 
@@ -104,6 +108,56 @@ messages! {
         /// `/g_queryTree`: the server replies `/g_queryTree.reply` for
         /// groups.
         "/g_queryTree" => GQueryTree(group::GQueryTree),
+        /// `/u_cmd`: a command that a plugin defines for a unit generator.
+        "/u_cmd" => UCmd(unit_generator::UCmd),
+        /// `/b_alloc`: allocates a buffer.
+        "/b_alloc" => BAlloc(buffer::BAlloc),
+        /// `/b_allocRead`: allocates a buffer, and reads a sound file into
+        /// it.
+        "/b_allocRead" => BAllocRead(buffer::BAllocRead),
+        /// `/b_allocReadChannel`: allocates a buffer, and reads channels of
+        /// a sound file into it.
+        "/b_allocReadChannel" => BAllocReadChannel(buffer::BAllocReadChannel),
+        /// `/b_read`: reads a sound file into a buffer.
+        "/b_read" => BRead(buffer::BRead),
+        /// `/b_readChannel`: reads channels of a sound file into a buffer.
+        "/b_readChannel" => BReadChannel(buffer::BReadChannel),
+        /// `/b_write`: writes a buffer into a sound file.
+        "/b_write" => BWrite(buffer::BWrite),
+        /// `/b_free`: frees a buffer.
+        "/b_free" => BFree(buffer::BFree),
+        /// `/b_zero`: sets every sample of a buffer to 0.
+        "/b_zero" => BZero(buffer::BZero),
+        /// `/b_set`: sets samples of a buffer.
+        "/b_set" => BSet(buffer::BSet),
+        /// `/b_setn`: sets ranges of samples of a buffer.
+        "/b_setn" => BSetn(buffer::BSetn),
+        /// `/b_setSampleRate`: sets the sample rate of a buffer.
+        "/b_setSampleRate" => BSetSampleRate(buffer::BSetSampleRate),
+        /// `/b_fill`: sets ranges of samples of a buffer to one value each.
+        "/b_fill" => BFill(buffer::BFill),
+        /// `/b_gen`: a fill command writes a buffer.
+        "/b_gen" => BGen(buffer::BGen),
+        /// `/b_close`: closes the sound file of a buffer.
+        "/b_close" => BClose(buffer::BClose),
+        /// `/b_query`: the server replies `/b_info` for buffers.
+        "/b_query" => BQuery(buffer::BQuery),
+        /// `/b_get`: the server replies `/b_set` with values of samples.
+        "/b_get" => BGet(buffer::BGet),
+        /// `/b_getn`: the server replies `/b_setn` with values of ranges of
+        /// samples.
+        "/b_getn" => BGetn(buffer::BGetn),
+        /// `/c_set`: sets control buses.
+        "/c_set" => CSet(control_bus::CSet),
+        /// `/c_setn`: sets ranges of control buses.
+        "/c_setn" => CSetn(control_bus::CSetn),
+        /// `/c_fill`: sets ranges of control buses to one value each.
+        "/c_fill" => CFill(control_bus::CFill),
+        /// `/c_get`: the server replies `/c_set` with values of buses.
+        "/c_get" => CGet(control_bus::CGet),
+        /// `/c_getn`: the server replies `/c_setn` with values of ranges of
+        /// buses.
+        "/c_getn" => CGetn(control_bus::CGetn),
     }
 }
 

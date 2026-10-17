@@ -2,11 +2,14 @@
 //! to the sender of the command only, and the notifications, sent to every
 //! client registered with `/notify`. scsynth never wraps them in bundles.
 
+pub mod buffer;
 pub mod command_replies;
+pub mod control_bus;
 pub mod group;
 pub mod node_notification;
 pub mod synth;
 pub mod top_level;
+pub mod trigger;
 
 use crate::codec::messages;
 use crate::command::top_level::SyncId;
@@ -46,5 +49,17 @@ messages! {
         /// `/g_queryTree.reply`: the answer to `/g_queryTree`, one per
         /// group.
         "/g_queryTree.reply" => GQueryTreeReply(group::GQueryTreeReply),
+        /// `/b_info`: the answer to `/b_query`.
+        "/b_info" => BInfo(buffer::BInfo),
+        /// `/b_set`: the answer to `/b_get`.
+        "/b_set" => BSet(buffer::BSet),
+        /// `/b_setn`: the answer to `/b_getn`.
+        "/b_setn" => BSetn(buffer::BSetn),
+        /// `/c_set`: the answer to `/c_get`.
+        "/c_set" => CSet(control_bus::CSet),
+        /// `/c_setn`: the answer to `/c_getn`.
+        "/c_setn" => CSetn(control_bus::CSetn),
+        /// `/tr`: a `SendTrig` unit generator triggered.
+        "/tr" => Tr(trigger::Tr),
     }
 }
