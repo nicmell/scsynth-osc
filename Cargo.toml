@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 authors = ["nicmell"]
 description = "The OSC protocol of scsynth, the SuperCollider synthesis server: every command and reply of the Server Command Reference, typed, and encoded and decoded strictly."
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/nicmell/scsynth-osc"
 readme = "README.md"
 keywords = ["supercollider", "scsynth", "osc", "audio", "synthesis"]
