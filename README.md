@@ -70,6 +70,34 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
   `IndexFill` and `IndexRange`. Their values are `f32`, or `Number` where
   the reference takes an int too.
 
+## Raw messages
+
+A `RawMessage` is one OSC message as its address and its typed arguments,
+without the meaning that a command or a reply gives them. Each argument
+is a `RawArg`: an int, a float, a double, a string, a blob, or an array
+of arguments.
+
+```rust
+use scsynth_osc::{Command, RawArg, RawMessage, SyncId};
+
+let raw = Command::Sync(SyncId(7)).to_raw();
+assert_eq!(raw.address, "/sync");
+assert_eq!(raw.args, [RawArg::Int(7)]);
+assert_eq!(Command::from_raw(&raw), Ok(Command::Sync(SyncId(7))));
+```
+
+- `Command::to_raw` and `Reply::to_raw` give the raw form of a message.
+  `from_raw` decodes it as strictly as `decode` decodes bytes, with the
+  same errors.
+- `RawMessage::encode` and `RawMessage::decode` take any address.
+  Decoding refuses an argument of another OSC type than `i`, `f`, `d`,
+  `s`, `b` or an array.
+- A `Packet<RawMessage>` decodes bundles too.
+- Encoding writes a string, the address too, up to its first NUL byte,
+  and checks nothing else. The guarantee under [Strictness](#strictness)
+  covers `Command` and `Reply` only: check a raw message with
+  `Command::from_raw` before it goes to scsynth.
+
 ## Strictness
 
 - Encoding writes each argument in the one OSC type that the reference
@@ -85,7 +113,7 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
   modes and formats. It does not model the server: whether a node or a
   buffer exists is not its concern.
 
-Except for the traps below, no value of these types encodes to bytes that
+Except for the traps below, no `Command` or `Reply` encodes to bytes that
 make scsynth misread a message, hang, or write outside its memory:
 
 - A string ends at its first NUL byte, because scsynth reads the bytes
@@ -296,6 +324,12 @@ remove it.
   - `serde_json` reads at most 128 levels of nesting. Bundles nested 42
     deep, and trees and completion messages nested 43 deep, do not read
     back.
+  - A `RawMessage` is an object with its `address` and its `args`, each
+    with its `type` and its `data`, such as
+    `{"address": "/sync", "args": [{"type": "i", "data": 7}]}`. The types
+    are `i`, `f`, `d`, `s`, `b`, and `[` for an array. A blob serializes
+    as bytes: an array of numbers in JSON, and a `Uint8Array` through
+    serde-wasm-bindgen.
 
 ## License
 

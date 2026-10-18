@@ -5,6 +5,7 @@ mod codec;
 pub mod command;
 mod error;
 mod packet;
+mod raw;
 pub mod reply;
 #[cfg(test)]
 mod testing;
@@ -16,6 +17,7 @@ pub use command::top_level::SyncId;
 pub use command::{Command, Completion};
 pub use error::{DecodeError, DecodeErrorKind};
 pub use packet::{Bundle, Packet, Timetag};
+pub use raw::{RawArg, RawMessage};
 pub use reply::Reply;
 pub use types::{
     AddAction, ArrayElement, BufferId, BusMapping, Control, ControlSetting, ControlValue,

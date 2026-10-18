@@ -29,6 +29,11 @@ pub(crate) fn assert_wire<T: Message + PartialEq + Debug + Clone>(
         args,
     };
     assert_eq!(message.to_osc(), expected, "{message:?}");
+    assert_eq!(
+        T::from_raw(&message.to_raw()).as_ref(),
+        Ok(message),
+        "{message:?}"
+    );
     let packet = Packet::Message(message.clone());
     assert_eq!(
         Packet::<T>::decode(&packet.encode()),

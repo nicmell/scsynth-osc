@@ -54,7 +54,7 @@ impl Payload for Cmd {
     fn write(&self, writer: &mut Writer) {
         writer.string(&self.name);
         for arg in &self.args {
-            writer.push(arg.to_osc());
+            writer.push(arg.to_raw());
         }
     }
 

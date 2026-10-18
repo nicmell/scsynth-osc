@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.1 (2026-10-18)
+
+### Added
+
+- `RawMessage` and `RawArg`: an OSC message as its address and its typed
+  arguments. `Command` and `Reply` convert to and from it with `to_raw`
+  and `from_raw`, and a `Packet<RawMessage>` decodes bundles. See
+  [Raw messages](README.md#raw-messages).
+- With the feature `serde`, a raw message is
+  `{"address": …, "args": [{"type": …, "data": …}]}`, and a blob
+  serializes as bytes, through `serde_bytes`.
+
 ## 0.1.0 (2026-10-18)
 
 The first release. It holds the commands and the replies of the Server

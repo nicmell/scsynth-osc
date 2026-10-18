@@ -2,7 +2,7 @@
 
 use rosc::OscType;
 
-use crate::codec::osc_string;
+use crate::raw::RawArg;
 
 /// One argument that scsynth hands to a plugin as it is: an argument of
 /// `/cmd`, of `/u_cmd`, or of a plugin's fill for `/b_gen`. The variants are
@@ -28,13 +28,13 @@ pub enum Argument {
 }
 
 impl Argument {
-    pub(crate) fn to_osc(&self) -> OscType {
+    pub(crate) fn to_raw(&self) -> RawArg {
         match self {
-            Self::Int(value) => OscType::Int(*value),
-            Self::Float(value) => OscType::Float(*value),
-            Self::Double(value) => OscType::Double(*value),
-            Self::String(value) => osc_string(value),
-            Self::Blob(value) => OscType::Blob(value.clone()),
+            Self::Int(value) => RawArg::Int(*value),
+            Self::Float(value) => RawArg::Float(*value),
+            Self::Double(value) => RawArg::Double(*value),
+            Self::String(value) => RawArg::String(value.clone()),
+            Self::Blob(value) => RawArg::Blob(value.clone()),
         }
     }
 

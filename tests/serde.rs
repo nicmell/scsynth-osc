@@ -18,7 +18,7 @@ use scsynth_osc::reply::trigger::Tr;
 use scsynth_osc::{
     AddAction, Argument, ArrayElement, BufferId, Bundle, BusMapping, Command, Completion, Control,
     ControlSetting, ControlValue, IndexValue, NewNodeId, NodeId, Number, OrderAction, Packet,
-    Reply, Timetag,
+    RawArg, RawMessage, Reply, Timetag,
 };
 use serde_json::json;
 
@@ -553,4 +553,32 @@ fn serde_json_refuses_bundles_42_deep_and_trees_and_completions_43_deep() {
     assert!(!reads_back(&completions(43)));
     assert!(reads_back(&trees(42)));
     assert!(!reads_back(&trees(43)));
+}
+
+#[test]
+fn a_raw_message_is_its_address_and_its_typed_args() {
+    let raw = RawMessage {
+        address: "/demo".to_owned(),
+        args: vec![
+            RawArg::Int(-1),
+            RawArg::Float(0.5),
+            RawArg::Double(0.25),
+            RawArg::String("default".to_owned()),
+            RawArg::Blob(vec![1, 2]),
+            RawArg::Array(vec![RawArg::Float(1.0), RawArg::String("c3".to_owned())]),
+        ],
+    };
+    round_trip(
+        &raw,
+        json!({"address": "/demo", "args": [
+            {"type": "i", "data": -1},
+            {"type": "f", "data": 0.5},
+            {"type": "d", "data": 0.25},
+            {"type": "s", "data": "default"},
+            {"type": "b", "data": [1, 2]},
+            {"type": "[", "data": [{"type": "f", "data": 1.0}, {"type": "s", "data": "c3"}]}
+        ]}),
+    );
+    let fraction = json!({"address": "/sync", "args": [{"type": "i", "data": 1.5}]});
+    assert!(serde_json::from_value::<RawMessage>(fraction).is_err());
 }

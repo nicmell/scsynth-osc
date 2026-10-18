@@ -187,7 +187,7 @@ impl BufferFill {
             }
             Self::Plugin { args, .. } => {
                 for arg in args {
-                    writer.push(arg.to_osc());
+                    writer.push(arg.to_raw());
                 }
             }
         }

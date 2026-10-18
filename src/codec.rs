@@ -4,6 +4,7 @@
 use rosc::OscType;
 
 use crate::error::{DecodeError, DecodeErrorKind};
+use crate::raw::RawArg;
 
 /// The OSC type tag of an argument.
 pub(crate) fn tag(value: &OscType) -> char {
@@ -24,12 +25,6 @@ pub(crate) fn tag(value: &OscType) -> char {
         OscType::Nil => 'N',
         OscType::Inf => 'I',
     }
-}
-
-/// `value` as an OSC string, up to its first NUL byte.
-pub(crate) fn osc_string(value: &str) -> OscType {
-    let end = value.find('\0').unwrap_or(value.len());
-    OscType::String(value[..end].to_owned())
 }
 
 /// A cursor over the arguments of one message. It takes each argument only
@@ -229,28 +224,28 @@ impl<'a> Reader<'a> {
 /// The arguments of one message, as they are written.
 #[derive(Default)]
 pub(crate) struct Writer {
-    args: Vec<OscType>,
+    args: Vec<RawArg>,
 }
 
 impl Writer {
     pub(crate) fn int(&mut self, value: i32) {
-        self.args.push(OscType::Int(value));
+        self.args.push(RawArg::Int(value));
     }
 
     pub(crate) fn float(&mut self, value: f32) {
-        self.args.push(OscType::Float(value));
+        self.args.push(RawArg::Float(value));
     }
 
     pub(crate) fn double(&mut self, value: f64) {
-        self.args.push(OscType::Double(value));
+        self.args.push(RawArg::Double(value));
     }
 
     pub(crate) fn string(&mut self, value: &str) {
-        self.args.push(osc_string(value));
+        self.args.push(RawArg::String(value.to_owned()));
     }
 
     pub(crate) fn blob(&mut self, value: Vec<u8>) {
-        self.args.push(OscType::Blob(value));
+        self.args.push(RawArg::Blob(value));
     }
 
     pub(crate) fn flag(&mut self, value: bool) {
@@ -262,11 +257,11 @@ impl Writer {
         self.int(i32::try_from(len).expect("an OSC packet holds fewer than 2^31 arguments"));
     }
 
-    pub(crate) fn push(&mut self, value: OscType) {
+    pub(crate) fn push(&mut self, value: RawArg) {
         self.args.push(value);
     }
 
-    pub(crate) fn finish(self) -> Vec<OscType> {
+    pub(crate) fn finish(self) -> Vec<RawArg> {
         self.args
     }
 }
@@ -278,20 +273,29 @@ pub(crate) trait Payload: Sized {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError>;
 }
 
-/// A command or a reply, as one OSC message: [`crate::Command`] or
-/// [`crate::Reply`]. Sealed.
+/// What a [`crate::Packet`] holds: a [`crate::Command`], a
+/// [`crate::Reply`] or a [`crate::RawMessage`]. Sealed.
 pub trait Message: sealed::Codec {}
 
 pub(crate) mod sealed {
     use rosc::OscMessage;
 
     use crate::error::DecodeError;
+    use crate::raw::{RawMessage, osc_message};
 
-    /// The OSC form of a [`super::Message`].
+    /// The forms of a [`super::Message`]: raw, and as rosc reads it.
     pub trait Codec: Sized {
-        fn to_osc(&self) -> OscMessage;
+        fn to_raw(&self) -> RawMessage;
 
         fn from_osc(message: &OscMessage) -> Result<Self, DecodeError>;
+
+        fn to_osc(&self) -> OscMessage {
+            osc_message(&self.to_raw())
+        }
+
+        fn from_raw(raw: &RawMessage) -> Result<Self, DecodeError> {
+            Self::from_osc(&osc_message(raw))
+        }
     }
 }
 
@@ -352,12 +356,30 @@ macro_rules! messages {
                 let message = $crate::packet::decode_message(bytes)?;
                 <Self as $crate::codec::sealed::Codec>::from_osc(&message)
             }
+
+            /// The message as its address and typed arguments. See
+            /// [Raw messages](crate#raw-messages).
+            #[must_use]
+            pub fn to_raw(&self) -> $crate::RawMessage {
+                <Self as $crate::codec::sealed::Codec>::to_raw(self)
+            }
+
+            /// The message in `raw`, decoded as strictly as
+            /// [`Self::decode`] decodes bytes.
+            ///
+            /// # Errors
+            ///
+            /// When `raw` is not a message of this type.
+            /// [`DecodeErrorKind`]($crate::DecodeErrorKind) says which.
+            pub fn from_raw(raw: &$crate::RawMessage) -> Result<Self, $crate::DecodeError> {
+                <Self as $crate::codec::sealed::Codec>::from_raw(raw)
+            }
         }
 
         impl $crate::codec::Message for $name {}
 
         impl $crate::codec::sealed::Codec for $name {
-            fn to_osc(&self) -> rosc::OscMessage {
+            fn to_raw(&self) -> $crate::RawMessage {
                 let mut writer = $crate::codec::Writer::default();
                 match self {
                     $(
@@ -366,8 +388,8 @@ macro_rules! messages {
                         }
                     )*
                 }
-                rosc::OscMessage {
-                    addr: self.address().to_owned(),
+                $crate::RawMessage {
+                    address: self.address().to_owned(),
                     args: writer.finish(),
                 }
             }

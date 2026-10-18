@@ -4,10 +4,11 @@
 use std::fmt;
 use std::str::FromStr;
 
-use rosc::{OscArray, OscType};
+use rosc::OscType;
 
 use crate::codec::{Reader, Writer, coded, tag};
 use crate::error::DecodeError;
+use crate::raw::RawArg;
 
 /// A node of the server's tree: a synth or a group. Node 0 is the root
 /// group.
@@ -388,12 +389,12 @@ impl ControlValue {
 
     pub(crate) fn write(&self, writer: &mut Writer) {
         writer.push(match self {
-            Self::Int(value) => OscType::Int(*value),
-            Self::Float(value) => OscType::Float(*value),
-            Self::Bus(mapping) => OscType::String(mapping.to_string()),
-            Self::Array(elements) => OscType::Array(OscArray {
-                content: elements.iter().copied().map(ArrayElement::to_osc).collect(),
-            }),
+            Self::Int(value) => RawArg::Int(*value),
+            Self::Float(value) => RawArg::Float(*value),
+            Self::Bus(mapping) => RawArg::String(mapping.to_string()),
+            Self::Array(elements) => {
+                RawArg::Array(elements.iter().copied().map(ArrayElement::to_raw).collect())
+            }
         });
     }
 }
@@ -419,11 +420,11 @@ impl ArrayElement {
         }
     }
 
-    fn to_osc(self) -> OscType {
+    fn to_raw(self) -> RawArg {
         match self {
-            Self::Int(value) => OscType::Int(value),
-            Self::Float(value) => OscType::Float(value),
-            Self::Bus(mapping) => OscType::String(mapping.to_string()),
+            Self::Int(value) => RawArg::Int(value),
+            Self::Float(value) => RawArg::Float(value),
+            Self::Bus(mapping) => RawArg::String(mapping.to_string()),
         }
     }
 }
