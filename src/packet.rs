@@ -66,14 +66,14 @@ pub enum Packet<T> {
 }
 
 /// A bundle: packets that the server runs together, at its time tag.
-/// scsynth runs the packets of a bundle that it receives from the network,
-/// and of every bundle nested in it, in order.
+/// scsynth runs the messages of a bundle first, in order, then each
+/// bundle nested in it. See the README for a bundle that holds both.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bundle<T> {
     /// When the packets run.
     pub time: Timetag,
-    /// The packets, in the order they run.
+    /// The packets.
     pub packets: Vec<Packet<T>>,
 }
 

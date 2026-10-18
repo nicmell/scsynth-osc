@@ -85,8 +85,8 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
   modes and formats. It does not model the server: whether a node or a
   buffer exists is not its concern.
 
-No value of these types encodes to bytes that make scsynth misread a
-message, hang, or write outside its memory:
+Except for the traps below, no value of these types encodes to bytes that
+make scsynth misread a message, hang, or write outside its memory:
 
 - A string ends at its first NUL byte, because scsynth reads the bytes
   after it as the next arguments. The crate writes no more of it.
@@ -126,10 +126,16 @@ int, a float, a bus mapping or an array.
   differently in `/s_new` and in `/n_set`, and any other type in an array
   makes it loop forever.
 
-### Traps that depend on the server
+### Traps
 
-The crate cannot rule these out, because they depend on the state of the
-server:
+The crate does not rule these out:
+
+- A bundle that holds both messages and bundles: scsynth 3.14.1 copies
+  the first message over the header of the bundle, and misreads the rest
+  (`SC_ComPort.cpp:84-91`). Send messages and bundles in bundles of their
+  own.
+
+These depend on the state of the server, so the crate cannot check them:
 
 - A buffer number at or above the number of buffers of the server, set by
   `-b`: scsynth acts on buffer 0, or past the end of its arrays
