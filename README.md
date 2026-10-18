@@ -52,6 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -97,6 +98,23 @@ assert_eq!(Command::from_raw(&raw), Ok(Command::Sync(SyncId(7))));
   and checks nothing else. The guarantee under [Strictness](#strictness)
   covers `Command` and `Reply` only: check a raw message with
   `Command::from_raw` before it goes to scsynth.
+
+## The protocol of sc-app3's pump
+
+This branch, `sc-app3`, also holds the messages between the pages of
+sc-app3 and the pump of their session. They are not scsynth's: the pump
+handles them, and they never reach scsynth.
+
+| Command | Args | Answers |
+| --- | --- | --- |
+| `/loadRoot` | session | `/loadRoot.success session`, `/loadRoot.failure session reason` |
+| `/unloadRoot` | session | `/unloadRoot.success session`, `/unloadRoot.failure session reason` |
+| `/loadPlugin` | session, plugin | `/loadPlugin.success session plugin`, `/loadPlugin.failure session plugin reason` |
+| `/unloadPlugin` | session, plugin | `/unloadPlugin.success session plugin`, `/unloadPlugin.failure session plugin reason` |
+
+- A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
+  in lowercase with hyphens, and decoding refuses any other form.
+- `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 
 ## Strictness
 

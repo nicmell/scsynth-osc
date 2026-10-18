@@ -1,5 +1,14 @@
 # Changelog
 
+## Branch sc-app3 (unreleased)
+
+### Added
+
+- The messages of sc-app3's pump: `/loadRoot`, `/unloadRoot`,
+  `/loadPlugin` and `/unloadPlugin`, and their `.success` and `.failure`
+  answers, with their sessions and plugins as `uuid::Uuid`. See
+  [The protocol of sc-app3's pump](README.md#the-protocol-of-sc-app3s-pump).
+
 ## 0.1.1 (2026-10-18)
 
 ### Added

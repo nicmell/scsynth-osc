@@ -72,6 +72,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -143,6 +144,15 @@ name = "unicode-ident"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
+
+[[package]]
+name = "uuid"
+version = "1.26.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce"
+dependencies = [
+ "serde_core",
+]
 
 [[package]]
 name = "zmij"

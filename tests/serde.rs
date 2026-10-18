@@ -5,6 +5,7 @@ use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleForm
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
 use scsynth_osc::command::node::NOrder;
+use scsynth_osc::command::pump::{Plugin, Root};
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
@@ -13,6 +14,7 @@ use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
 use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
+use scsynth_osc::reply::pump::PluginFailure;
 use scsynth_osc::reply::top_level::StatusReply;
 use scsynth_osc::reply::trigger::Tr;
 use scsynth_osc::{
@@ -581,4 +583,35 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
     );
     let fraction = json!({"address": "/sync", "args": [{"type": "i", "data": 1.5}]});
     assert!(serde_json::from_value::<RawMessage>(fraction).is_err());
+}
+
+#[test]
+fn a_message_of_the_pump_names_its_uuids() {
+    let session = "5049297f-342b-4b8b-8c62-54edbb5d3335";
+    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
+    let uuid = |text: &str| text.parse().expect("a uuid");
+    round_trip(
+        &Command::LoadRoot(Root {
+            session: uuid(session),
+        }),
+        json!({"address": "/loadRoot", "args": {"session": session}}),
+    );
+    round_trip(
+        &Command::UnloadPlugin(Plugin {
+            session: uuid(session),
+            plugin: uuid(plugin),
+        }),
+        json!({"address": "/unloadPlugin", "args": {"session": session, "plugin": plugin}}),
+    );
+    let failure = PluginFailure {
+        session: uuid(session),
+        plugin: uuid(plugin),
+        reason: "The root group is not ready.".to_owned(),
+    };
+    round_trip(
+        &Reply::LoadPluginFailure(failure),
+        json!({"address": "/loadPlugin.failure", "args": {
+            "session": session, "plugin": plugin, "reason": "The root group is not ready."
+        }}),
+    );
 }

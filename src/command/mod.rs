@@ -6,6 +6,7 @@ pub mod buffer_fill;
 pub mod control_bus;
 pub mod group;
 pub mod node;
+pub mod pump;
 pub mod synth;
 pub mod synth_def;
 pub mod top_level;
@@ -20,7 +21,9 @@ use crate::packet::{Timetag, decode_osc, encode_osc};
 
 messages! {
     /// A command for scsynth: one variant per command of the Server Command
-    /// Reference, except those under [Left out](crate#left-out).
+    /// Reference, except those under [Left out](crate#left-out). The
+    /// commands of [sc-app3's pump](crate#the-protocol-of-sc-app3s-pump)
+    /// come last.
     #[non_exhaustive]
     Command {
         /// `/quit`: the server quits. It replies `/done /quit`.
@@ -160,6 +163,16 @@ messages! {
         /// `/c_getn`: the server replies `/c_setn` with values of ranges of
         /// buses.
         "/c_getn" => CGetn(control_bus::CGetn),
+        /// `/loadRoot`: the pump loads the root group of the session.
+        "/loadRoot" => LoadRoot(pump::Root),
+        /// `/unloadRoot`: the pump releases the holds of the page, and frees
+        /// the root group of the session once nobody holds it.
+        "/unloadRoot" => UnloadRoot(pump::Root),
+        /// `/loadPlugin`: the pump loads the group of the plugin.
+        "/loadPlugin" => LoadPlugin(pump::Plugin),
+        /// `/unloadPlugin`: the pump releases the page's hold on the group of
+        /// the plugin.
+        "/unloadPlugin" => UnloadPlugin(pump::Plugin),
     }
 }
 

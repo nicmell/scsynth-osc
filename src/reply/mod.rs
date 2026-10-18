@@ -7,6 +7,7 @@ pub mod command_replies;
 pub mod control_bus;
 pub mod group;
 pub mod node_notification;
+pub mod pump;
 pub mod synth;
 pub mod top_level;
 pub mod trigger;
@@ -17,7 +18,8 @@ use crate::command::top_level::SyncId;
 messages! {
     /// A message from scsynth: one variant per message of the Server Command
     /// Reference that scsynth sends, except those under
-    /// [Left out](crate#left-out).
+    /// [Left out](crate#left-out). The answers of
+    /// [sc-app3's pump](crate#the-protocol-of-sc-app3s-pump) come last.
     #[non_exhaustive]
     Reply {
         /// `/done`: an asynchronous command completed.
@@ -64,5 +66,21 @@ messages! {
         "/c_setn" => CSetn(control_bus::CSetn),
         /// `/tr`: a `SendTrig` unit generator triggered.
         "/tr" => Tr(trigger::Tr),
+        /// `/loadRoot.success`: the root group is ready.
+        "/loadRoot.success" => LoadRootSuccess(pump::Root),
+        /// `/loadRoot.failure`: the pump refused the load, or it failed.
+        "/loadRoot.failure" => LoadRootFailure(pump::RootFailure),
+        /// `/unloadRoot.success`: the root group is free.
+        "/unloadRoot.success" => UnloadRootSuccess(pump::Root),
+        /// `/unloadRoot.failure`: the pump refused the unload, or it failed.
+        "/unloadRoot.failure" => UnloadRootFailure(pump::RootFailure),
+        /// `/loadPlugin.success`: the group of the plugin is ready.
+        "/loadPlugin.success" => LoadPluginSuccess(pump::Plugin),
+        /// `/loadPlugin.failure`: the pump refused the load, or it failed.
+        "/loadPlugin.failure" => LoadPluginFailure(pump::PluginFailure),
+        /// `/unloadPlugin.success`: the group of the plugin is free.
+        "/unloadPlugin.success" => UnloadPluginSuccess(pump::Plugin),
+        /// `/unloadPlugin.failure`: the pump refused the unload, or it failed.
+        "/unloadPlugin.failure" => UnloadPluginFailure(pump::PluginFailure),
     }
 }
