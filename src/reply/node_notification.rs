@@ -13,7 +13,7 @@ use crate::types::NodeId;
 ///
 /// A missing node travels as -1, which no node has, so `Some(NodeId(-1))`
 /// encodes as `None`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeState {
     /// The node.
@@ -29,7 +29,7 @@ pub struct NodeState {
 }
 
 /// A synth, or a group with its first and last nodes.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),

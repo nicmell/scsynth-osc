@@ -27,32 +27,31 @@ impl Timetag {
     /// Whether scsynth runs a bundle with this time tag at once instead of
     /// scheduling it. It does so for the time tags 0 and 1
     /// (`SC_CoreAudio.cpp`, in `PerformOSCBundle`).
+    #[must_use]
     pub fn is_immediate(self) -> bool {
         self.seconds == 0 && self.fraction <= 1
     }
 }
 
-impl From<OscTime> for Timetag {
-    fn from(time: OscTime) -> Self {
+impl Timetag {
+    pub(crate) fn from_osc(time: OscTime) -> Self {
         Self {
             seconds: time.seconds,
             fraction: time.fractional,
         }
     }
-}
 
-impl From<Timetag> for OscTime {
-    fn from(time: Timetag) -> Self {
-        Self {
-            seconds: time.seconds,
-            fractional: time.fraction,
+    pub(crate) fn to_osc(self) -> OscTime {
+        OscTime {
+            seconds: self.seconds,
+            fractional: self.fraction,
         }
     }
 }
 
 /// One message, or a bundle of packets. `T` is [`crate::Command`] or
 /// [`crate::Reply`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -68,7 +67,7 @@ pub enum Packet<T> {
 /// A bundle: packets that the server runs together, at its time tag.
 /// scsynth runs the messages of a bundle first, in order, then each
 /// bundle nested in it. See the README for a bundle that holds both.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bundle<T> {
     /// When the packets run.
@@ -79,6 +78,7 @@ pub struct Bundle<T> {
 
 impl<T> Packet<T> {
     /// The messages of the packet, in order, its bundles flattened.
+    #[must_use]
     pub fn into_messages(self) -> Vec<T> {
         let mut messages = Vec::new();
         let mut pending = vec![self];
@@ -98,11 +98,17 @@ impl<T: Message> Packet<T> {
     /// # Panics
     ///
     /// On a list of more than `i32::MAX` values, which no OSC packet holds.
+    #[must_use]
     pub fn encode(&self) -> Vec<u8> {
         encode_osc(&self.to_osc())
     }
 
     /// The packet in `bytes`, which must hold exactly one OSC packet.
+    ///
+    /// # Errors
+    ///
+    /// When the bytes are not one OSC packet, or one of its messages does
+    /// not decode.
     pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
         Self::from_osc(&decode_osc(bytes)?)
     }
@@ -111,7 +117,7 @@ impl<T: Message> Packet<T> {
         match self {
             Self::Message(message) => OscPacket::Message(message.to_osc()),
             Self::Bundle(bundle) => OscPacket::Bundle(OscBundle {
-                timetag: bundle.time.into(),
+                timetag: bundle.time.to_osc(),
                 content: bundle.packets.iter().map(Self::to_osc).collect(),
             }),
         }
@@ -121,7 +127,7 @@ impl<T: Message> Packet<T> {
         match packet {
             OscPacket::Message(message) => T::from_osc(message).map(Self::Message),
             OscPacket::Bundle(bundle) => Ok(Self::Bundle(Bundle {
-                time: bundle.timetag.into(),
+                time: Timetag::from_osc(bundle.timetag),
                 packets: bundle
                     .content
                     .iter()

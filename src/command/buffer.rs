@@ -67,7 +67,7 @@ pub struct BAllocRead {
     pub path: String,
     /// The first frame of the file to read. scsynth takes 0 when the
     /// message ends before it.
-    pub start_frame: i32,
+    pub file_frame: i32,
     /// The number of frames to read. 0 or less reads to the end of the
     /// file, as scsynth does when the message ends before it.
     pub frames: i32,
@@ -79,7 +79,7 @@ impl Payload for BAllocRead {
     fn write(&self, writer: &mut Writer) {
         self.buffer.write(writer);
         writer.string(&self.path);
-        writer.int(self.start_frame);
+        writer.int(self.file_frame);
         writer.int(self.frames);
         write_completion(writer, self.completion.as_ref());
     }
@@ -88,7 +88,7 @@ impl Payload for BAllocRead {
         Ok(Self {
             buffer: BufferId::read(reader)?,
             path: reader.string()?,
-            start_frame: reader.int_or(0)?,
+            file_frame: reader.int_or(0)?,
             frames: reader.int_or(0)?,
             completion: read_completion(reader, true)?,
         })
@@ -105,7 +105,7 @@ pub struct BAllocReadChannel {
     /// The path of the sound file.
     pub path: String,
     /// The first frame of the file to read.
-    pub start_frame: i32,
+    pub file_frame: i32,
     /// The number of frames to read. 0 or less reads to the end of the
     /// file.
     pub frames: i32,
@@ -119,7 +119,7 @@ impl Payload for BAllocReadChannel {
     fn write(&self, writer: &mut Writer) {
         self.buffer.write(writer);
         writer.string(&self.path);
-        writer.int(self.start_frame);
+        writer.int(self.file_frame);
         writer.int(self.frames);
         self.channels.write(writer);
         write_completion(writer, self.completion.as_ref());
@@ -129,7 +129,7 @@ impl Payload for BAllocReadChannel {
         Ok(Self {
             buffer: BufferId::read(reader)?,
             path: reader.string()?,
-            start_frame: reader.int()?,
+            file_frame: reader.int()?,
             frames: reader.int()?,
             channels: Channels::read(reader)?,
             completion: read_completion(reader, false)?,
@@ -149,7 +149,7 @@ pub struct BRead {
     pub path: String,
     /// The first frame of the file to read. scsynth takes 0 when the
     /// message ends before it.
-    pub start_frame: i32,
+    pub file_frame: i32,
     /// The number of frames to read. A negative number reads to the end of
     /// the file, as scsynth does when the message ends before it. The read
     /// stops at the end of the buffer.
@@ -168,7 +168,7 @@ impl Payload for BRead {
     fn write(&self, writer: &mut Writer) {
         self.buffer.write(writer);
         writer.string(&self.path);
-        writer.int(self.start_frame);
+        writer.int(self.file_frame);
         writer.int(self.frames);
         writer.int(self.buffer_frame);
         writer.flag(self.leave_open);
@@ -179,7 +179,7 @@ impl Payload for BRead {
         Ok(Self {
             buffer: BufferId::read(reader)?,
             path: reader.string()?,
-            start_frame: reader.int_or(0)?,
+            file_frame: reader.int_or(0)?,
             frames: reader.int_or(-1)?,
             buffer_frame: reader.int_or(0)?,
             leave_open: reader.flag_or(false)?,
@@ -202,7 +202,7 @@ pub struct BReadChannel {
     /// The path of the sound file.
     pub path: String,
     /// The first frame of the file to read.
-    pub start_frame: i32,
+    pub file_frame: i32,
     /// The number of frames to read. A negative number reads to the end of
     /// the file. The read stops at the end of the buffer.
     pub frames: i32,
@@ -220,7 +220,7 @@ impl Payload for BReadChannel {
     fn write(&self, writer: &mut Writer) {
         self.buffer.write(writer);
         writer.string(&self.path);
-        writer.int(self.start_frame);
+        writer.int(self.file_frame);
         writer.int(self.frames);
         writer.int(self.buffer_frame);
         writer.flag(self.leave_open);
@@ -232,7 +232,7 @@ impl Payload for BReadChannel {
         Ok(Self {
             buffer: BufferId::read(reader)?,
             path: reader.string()?,
-            start_frame: reader.int()?,
+            file_frame: reader.int()?,
             frames: reader.int()?,
             buffer_frame: reader.int()?,
             leave_open: reader.flag()?,
@@ -247,7 +247,7 @@ impl Payload for BReadChannel {
 ///
 /// A read takes at most 32 channels: scsynth 3.14.1 writes a 33rd channel
 /// past the end of its array of 32.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -260,16 +260,19 @@ impl Channels {
     pub const MAX: usize = 32;
 
     /// `channels`, when they are at most [`Channels::MAX`].
+    #[must_use]
     pub fn new(channels: Vec<u16>) -> Option<Self> {
         (channels.len() <= Self::MAX).then_some(Self(channels))
     }
 
     /// Every channel of the file.
+    #[must_use]
     pub fn all() -> Self {
         Self(Vec::new())
     }
 
     /// The channels, in order.
+    #[must_use]
     pub fn get(&self) -> &[u16] {
         &self.0
     }
@@ -313,7 +316,7 @@ impl TryFrom<Vec<u16>> for Channels {
 }
 
 /// More channels than [`Channels::MAX`].
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TooManyChannels(pub Vec<u16>);
 
 impl fmt::Display for TooManyChannels {
@@ -353,7 +356,7 @@ pub struct BWrite {
     pub frames: i32,
     /// The first frame of the buffer to write. scsynth takes 0 when the
     /// message ends before it.
-    pub start_frame: i32,
+    pub buffer_frame: i32,
     /// Whether the file stays open, for `DiskOut`. scsynth writes the
     /// frames also then: write 0 frames for `DiskOut`. scsynth takes
     /// `false` when the message ends before it.
@@ -369,7 +372,7 @@ impl Payload for BWrite {
         writer.string(self.header.name());
         writer.string(self.sample.name());
         writer.int(self.frames);
-        writer.int(self.start_frame);
+        writer.int(self.buffer_frame);
         writer.flag(self.leave_open);
         write_completion(writer, self.completion.as_ref());
     }
@@ -381,7 +384,7 @@ impl Payload for BWrite {
             header: reader.named("a header format", HeaderFormat::from_name)?,
             sample: reader.named("a sample format", SampleFormat::from_name)?,
             frames: reader.int_or(-1)?,
-            start_frame: reader.int_or(0)?,
+            buffer_frame: reader.int_or(0)?,
             leave_open: reader.flag_or(false)?,
             completion: read_completion(reader, true)?,
         })
@@ -391,6 +394,7 @@ impl Payload for BWrite {
 named! {
     /// The header format of a sound file of `/b_write`, as libsndfile
     /// writes it. Decoding ignores case, as scsynth does.
+    #[non_exhaustive]
     HeaderFormat {
         /// AIFF. scsynth also takes `aifc` for it.
         Aiff = "aiff" | "aifc",
@@ -446,6 +450,7 @@ named! {
 named! {
     /// The sample format of a sound file of `/b_write`. Decoding ignores
     /// case, as scsynth does.
+    #[non_exhaustive]
     SampleFormat {
         /// Unsigned 8-bit integers.
         Uint8 = "uint8",
@@ -643,7 +648,7 @@ impl Payload for BGen {
 
 /// The arguments of `/b_query`: scsynth replies `/b_info` for the buffers.
 /// See [`crate::reply::buffer::BInfo`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BQuery {
     /// The buffers.
@@ -666,7 +671,7 @@ impl Payload for BQuery {
 
 /// The arguments of `/b_get`: scsynth replies `/b_set` with the values of
 /// the samples. It fails on an index outside the buffer.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BGet {
     /// The buffer.
@@ -693,7 +698,7 @@ impl Payload for BGet {
 
 /// The arguments of `/b_getn`: scsynth replies `/b_setn` with the values of
 /// the ranges. It fails on a range that is empty or not inside the buffer.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BGetn {
     /// The buffer.
@@ -795,7 +800,7 @@ mod tests {
         let read = BAllocRead {
             buffer: buffer(),
             path: "a.wav".to_owned(),
-            start_frame: 0,
+            file_frame: 0,
             frames: 0,
             completion: None,
         };
@@ -808,7 +813,7 @@ mod tests {
         let read = BRead {
             buffer: buffer(),
             path: "a.wav".to_owned(),
-            start_frame: 0,
+            file_frame: 0,
             frames: -1,
             buffer_frame: 0,
             leave_open: false,
@@ -847,7 +852,7 @@ mod tests {
         let read = BAllocReadChannel {
             buffer: buffer(),
             path: "a.wav".to_owned(),
-            start_frame: 0,
+            file_frame: 0,
             frames: -1,
             channels: Channels::new(vec![1, 0]).expect("two channels"),
             completion: Some(sync()),
@@ -882,7 +887,7 @@ mod tests {
         let read = BReadChannel {
             buffer: buffer(),
             path: "a.wav".to_owned(),
-            start_frame: 0,
+            file_frame: 0,
             frames: -1,
             buffer_frame: 8,
             leave_open: true,
@@ -920,7 +925,7 @@ mod tests {
             header: HeaderFormat::Wav,
             sample: SampleFormat::Int24,
             frames: -1,
-            start_frame: 0,
+            buffer_frame: 0,
             leave_open: false,
             completion: None,
         };

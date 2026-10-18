@@ -13,6 +13,7 @@ use crate::codec::osc_string;
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case")
 )]
+#[non_exhaustive]
 pub enum Argument {
     /// A 32-bit integer, `i`.
     Int(i32),

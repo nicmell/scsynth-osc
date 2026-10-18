@@ -16,6 +16,7 @@ use crate::types::BufferId;
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case")
 )]
+#[non_exhaustive]
 pub enum BufferFill {
     /// `sine1`: sine partials at whole multiples of the frequency of the
     /// buffer.
@@ -112,6 +113,7 @@ impl WaveFillFlags {
     const CLEAR: i32 = 4;
 
     /// The int that travels on the wire.
+    #[must_use]
     pub fn bits(self) -> i32 {
         let bit = |set, bit| if set { bit } else { 0 };
         bit(self.normalize, Self::NORMALIZE)
@@ -120,6 +122,7 @@ impl WaveFillFlags {
     }
 
     /// The flags of `bits`, when it holds no other bit.
+    #[must_use]
     pub fn from_bits(bits: i32) -> Option<Self> {
         (bits & !(Self::NORMALIZE | Self::WAVETABLE | Self::CLEAR) == 0).then_some(Self {
             normalize: bits & Self::NORMALIZE != 0,
@@ -135,6 +138,7 @@ impl WaveFillFlags {
 
 impl BufferFill {
     /// The name of the command.
+    #[must_use]
     pub fn name(&self) -> &str {
         match self {
             Self::Sine1 { .. } => "sine1",

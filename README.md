@@ -8,8 +8,7 @@ from the bytes that it writes.
 
 ```rust
 use scsynth_osc::command::synth::SNew;
-use scsynth_osc::command::top_level::SyncId;
-use scsynth_osc::{AddAction, Command, ControlSetting, NewNodeId, NodeId, Reply};
+use scsynth_osc::{AddAction, Command, ControlSetting, NewNodeId, NodeId, Reply, SyncId};
 
 // A synth of the definition "default", at the head of group 1.
 let new = Command::SNew(SNew {

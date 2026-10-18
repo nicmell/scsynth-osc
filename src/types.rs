@@ -38,7 +38,7 @@ impl NodeId {
 
 /// The ID of a node to create: one that the client picks, 0 or more, or
 /// one that the server picks.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -52,12 +52,15 @@ impl NewNodeId {
     /// created.
     pub const AUTO: Self = Self(-1);
 
-    /// `id`, when it is 0 or more. scsynth refuses the other negative IDs.
+    /// `id`, when it is -1, for [`NewNodeId::AUTO`], or 0 or more. scsynth
+    /// refuses the other negative IDs.
+    #[must_use]
     pub fn new(id: i32) -> Option<Self> {
-        (id >= 0).then_some(Self(id))
+        (id >= -1).then_some(Self(id))
     }
 
     /// The ID on the wire: -1 for [`NewNodeId::AUTO`].
+    #[must_use]
     pub fn get(self) -> i32 {
         self.0
     }
@@ -65,12 +68,7 @@ impl NewNodeId {
     pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         let index = reader.index();
         let id = reader.int()?;
-        Self::try_from(id).map_err(|_| {
-            reader.invalid(
-                index,
-                format!("{id} is no new node ID: -1 or an ID of 0 or more"),
-            )
-        })
+        Self::try_from(id).map_err(|error| reader.invalid(index, error.to_string()))
     }
 
     pub(crate) fn write(self, writer: &mut Writer) {
@@ -79,15 +77,13 @@ impl NewNodeId {
 }
 
 impl TryFrom<i32> for NewNodeId {
-    type Error = i32;
+    type Error = OutOfRange;
 
-    /// -1, for [`NewNodeId::AUTO`], or an ID of 0 or more.
-    fn try_from(id: i32) -> Result<Self, i32> {
-        if id == -1 {
-            Ok(Self::AUTO)
-        } else {
-            Self::new(id).ok_or(id)
-        }
+    fn try_from(id: i32) -> Result<Self, OutOfRange> {
+        Self::new(id).ok_or(OutOfRange {
+            value: id,
+            expected: "a new node ID: -1, or 0 or more",
+        })
     }
 }
 
@@ -323,7 +319,7 @@ impl From<BusMapping> for String {
 }
 
 /// A string that is no [`BusMapping`].
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct NotABusMapping(pub String);
 
 impl fmt::Display for NotABusMapping {
@@ -465,6 +461,7 @@ pub struct ControlSetting {
 
 impl ControlSetting {
     /// `control` set to `value`.
+    #[must_use]
     pub fn new(control: impl Into<Control>, value: impl Into<ControlValue>) -> Self {
         Self {
             control: control.into(),
@@ -502,11 +499,13 @@ pub struct BufferId(i32);
 
 impl BufferId {
     /// `index`, when it is 0 or more.
+    #[must_use]
     pub fn new(index: i32) -> Option<Self> {
         (index >= 0).then_some(Self(index))
     }
 
     /// The index.
+    #[must_use]
     pub fn get(self) -> i32 {
         self.0
     }
@@ -514,8 +513,7 @@ impl BufferId {
     pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         let index = reader.index();
         let buffer = reader.int()?;
-        Self::new(buffer)
-            .ok_or_else(|| reader.invalid(index, format!("{buffer} is no buffer: 0 or more")))
+        Self::try_from(buffer).map_err(|error| reader.invalid(index, error.to_string()))
     }
 
     pub(crate) fn write(self, writer: &mut Writer) {
@@ -524,12 +522,39 @@ impl BufferId {
 }
 
 impl TryFrom<i32> for BufferId {
-    type Error = i32;
+    type Error = OutOfRange;
 
-    fn try_from(index: i32) -> Result<Self, i32> {
-        Self::new(index).ok_or(index)
+    fn try_from(index: i32) -> Result<Self, OutOfRange> {
+        Self::new(index).ok_or(OutOfRange {
+            value: index,
+            expected: "a buffer number: 0 or more",
+        })
     }
 }
+
+/// An int outside the values that a type takes, such as a negative buffer
+/// number.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct OutOfRange {
+    value: i32,
+    expected: &'static str,
+}
+
+impl OutOfRange {
+    /// The int.
+    #[must_use]
+    pub fn value(self) -> i32 {
+        self.value
+    }
+}
+
+impl fmt::Display for OutOfRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} is not {}", self.value, self.expected)
+    }
+}
+
+impl std::error::Error for OutOfRange {}
 
 impl From<BufferId> for i32 {
     fn from(buffer: BufferId) -> Self {
@@ -586,7 +611,7 @@ pub(crate) fn write_all<T: Element>(writer: &mut Writer, elements: &[T]) {
 }
 
 /// A sample of a buffer, or a control bus, and its value.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IndexValue<V = f32> {
     /// The index of the sample, or of the bus.
@@ -610,7 +635,7 @@ impl<V: Value> Element for IndexValue<V> {
 }
 
 /// Consecutive samples of a buffer, or control buses, and their values.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IndexValues<V = f32> {
     /// The index of the first sample, or of the first bus.
@@ -640,7 +665,7 @@ impl<V: Value> Element for IndexValues<V> {
 
 /// Consecutive samples of a buffer, or control buses, and the one value
 /// for them all.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IndexFill<V = f32> {
     /// The index of the first sample, or of the first bus.
@@ -668,7 +693,7 @@ impl<V: Value> Element for IndexFill<V> {
 }
 
 /// Consecutive samples of a buffer, or control buses, to read.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IndexRange {
     /// The index of the first sample, or of the first bus.
@@ -733,7 +758,21 @@ mod tests {
     fn a_new_node_id_is_minus_1_or_0_or_more() {
         assert_eq!(NewNodeId::try_from(-1), Ok(NewNodeId::AUTO));
         assert_eq!(NewNodeId::try_from(0).map(NewNodeId::get), Ok(0));
-        assert_eq!(NewNodeId::try_from(-2), Err(-2));
-        assert_eq!(NewNodeId::new(-1), None);
+        let error = NewNodeId::try_from(-2).unwrap_err();
+        assert_eq!(error.value(), -2);
+        assert_eq!(
+            error.to_string(),
+            "-2 is not a new node ID: -1, or 0 or more"
+        );
+        assert_eq!(NewNodeId::new(-1), Some(NewNodeId::AUTO));
+        assert_eq!(NewNodeId::new(-2), None);
+    }
+
+    #[test]
+    fn a_buffer_number_is_0_or_more() {
+        assert_eq!(BufferId::try_from(0_i32).map(BufferId::get), Ok(0));
+        let error = BufferId::try_from(-1_i32).unwrap_err();
+        assert_eq!(error.value(), -1);
+        assert_eq!(error.to_string(), "-1 is not a buffer number: 0 or more");
     }
 }

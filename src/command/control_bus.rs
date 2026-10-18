@@ -71,7 +71,7 @@ impl Payload for CFill {
 /// The arguments of `/c_get`: scsynth replies `/c_set` with the values of
 /// the buses. It fails on a bus that it does not have. See
 /// [`crate::reply::control_bus::CSet`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CGet {
     /// The buses.
@@ -95,7 +95,7 @@ impl Payload for CGet {
 /// The arguments of `/c_getn`: scsynth replies `/c_setn` with the values of
 /// the ranges. It fails on a range that is empty or not inside its buses.
 /// See [`crate::reply::control_bus::CSetn`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CGetn {
     /// The ranges.

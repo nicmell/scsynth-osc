@@ -14,7 +14,7 @@ use crate::types::NodeId;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UCmd {
     /// The synth.
-    pub node: NodeId,
+    pub synth: NodeId,
     /// The index of the unit generator in the synth definition.
     pub unit: i32,
     /// The name of the command, as the plugin registered it.
@@ -25,7 +25,7 @@ pub struct UCmd {
 
 impl Payload for UCmd {
     fn write(&self, writer: &mut Writer) {
-        self.node.write(writer);
+        self.synth.write(writer);
         writer.int(self.unit);
         writer.string(&self.name);
         for arg in &self.args {
@@ -35,7 +35,7 @@ impl Payload for UCmd {
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            node: NodeId::read(reader)?,
+            synth: NodeId::read(reader)?,
             unit: reader.int()?,
             name: reader.string()?,
             args: read_plugin_args(reader)?,
@@ -54,7 +54,7 @@ mod tests {
     #[test]
     fn a_unit_command_names_its_synth_unit_and_command() {
         let command = UCmd {
-            node: NodeId(1000),
+            synth: NodeId(1000),
             unit: 2,
             name: "setPos".to_owned(),
             args: vec![Argument::Float(0.5)],

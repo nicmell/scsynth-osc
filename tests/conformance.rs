@@ -20,8 +20,8 @@ use scsynth_osc::command::group::{
     GDumpTree, GFreeAll, GHead, GNew, GroupMove, NewGroup, TreeRequest,
 };
 use scsynth_osc::command::node::{
-    ControlBus, ControlBusRange, ControlFill, ControlRange, NBefore, NFill, NFree, NMap, NMapn,
-    NOrder, NQuery, NRun, NSet, NSetn, NTrace, NodeMove, NodeRun,
+    ControlFill, ControlMapping, ControlMappingRange, ControlRange, NBefore, NFill, NFree, NMap,
+    NMapn, NOrder, NQuery, NRun, NSet, NSetn, NTrace, NodeMove, NodeRun,
 };
 use scsynth_osc::command::synth::{RangeRequest, SGet, SGetn, SNew, SNoid};
 use scsynth_osc::command::synth_def::{DFree, DLoad, DLoadDir, DRecv};
@@ -360,7 +360,7 @@ fn map_controls(server: &mut Server) {
     // Mappings show in the tree with its controls.
     server.send(&Command::NMap(NMap {
         node: NodeId(2001),
-        mappings: vec![ControlBus {
+        mappings: vec![ControlMapping {
             control: Control::from("freq"),
             bus: 5,
         }],
@@ -369,7 +369,7 @@ fn map_controls(server: &mut Server) {
     // one control, so `pan` keeps its value.
     server.send(&Command::NMapan(NMapn {
         node: NodeId(2001),
-        mappings: vec![ControlBusRange {
+        mappings: vec![ControlMappingRange {
             control: Control::from("amp"),
             bus: 6,
             count: 2,
@@ -392,7 +392,7 @@ fn map_controls(server: &mut Server) {
     // A range from an index runs on through the controls after it.
     server.send(&Command::NMapan(NMapn {
         node: NodeId(2001),
-        mappings: vec![ControlBusRange {
+        mappings: vec![ControlMappingRange {
             control: Control::Index(2),
             bus: 8,
             count: 2,
@@ -408,7 +408,7 @@ fn map_controls(server: &mut Server) {
     );
     server.send(&Command::NMapn(NMapn {
         node: NodeId(2001),
-        mappings: vec![ControlBusRange {
+        mappings: vec![ControlMappingRange {
             control: Control::Index(1),
             bus: -1,
             count: 4,
@@ -416,7 +416,7 @@ fn map_controls(server: &mut Server) {
     }));
     server.send(&Command::NMapa(NMap {
         node: NodeId(2001),
-        mappings: vec![ControlBus {
+        mappings: vec![ControlMapping {
             control: Control::from("gate"),
             bus: -1,
         }],
@@ -741,7 +741,7 @@ fn read_and_write_files(server: &mut Server, buffer: BufferId) {
         header: HeaderFormat::Wav,
         sample: SampleFormat::Float,
         frames: -1,
-        start_frame: 0,
+        buffer_frame: 0,
         leave_open: false,
         completion: None,
     }));
@@ -750,7 +750,7 @@ fn read_and_write_files(server: &mut Server, buffer: BufferId) {
     server.send(&Command::BAllocRead(BAllocRead {
         buffer: other,
         path: path_text.clone(),
-        start_frame: 0,
+        file_frame: 0,
         frames: 0,
         completion: None,
     }));
@@ -758,7 +758,7 @@ fn read_and_write_files(server: &mut Server, buffer: BufferId) {
     server.send(&Command::BAllocReadChannel(BAllocReadChannel {
         buffer: other,
         path: path_text.clone(),
-        start_frame: 0,
+        file_frame: 0,
         frames: 16,
         channels: Channels::new(vec![0]).expect("one channel"),
         completion: None,
@@ -775,7 +775,7 @@ fn read_and_write_files(server: &mut Server, buffer: BufferId) {
     server.send(&Command::BRead(BRead {
         buffer,
         path: path_text.clone(),
-        start_frame: 0,
+        file_frame: 0,
         frames: -1,
         buffer_frame: 0,
         leave_open: false,
@@ -785,7 +785,7 @@ fn read_and_write_files(server: &mut Server, buffer: BufferId) {
     server.send(&Command::BReadChannel(BReadChannel {
         buffer,
         path: path_text,
-        start_frame: 0,
+        file_frame: 0,
         frames: -1,
         buffer_frame: 0,
         leave_open: true,

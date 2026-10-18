@@ -16,6 +16,7 @@ use crate::command::top_level::SyncId;
 
 messages! {
     /// A message from scsynth: one variant per address.
+    #[non_exhaustive]
     Reply {
         /// `/done`: an asynchronous command completed.
         "/done" => Done(command_replies::Done),

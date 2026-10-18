@@ -57,7 +57,7 @@ impl Payload for StatusReply {
 }
 
 /// The arguments of `/version.reply`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VersionReply {
     /// The program: `scsynth`.
@@ -99,7 +99,7 @@ impl Payload for VersionReply {
 
 /// The arguments of `/rtMemoryStatus.reply`, the real-time memory of the
 /// server.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RtMemoryStatusReply {
     /// The free real-time memory, in bytes.

@@ -50,7 +50,7 @@ impl Payload for SNew {
 /// The arguments of `/s_get`: scsynth replies `/n_set` with the value of
 /// each control, 0 for a control that the synth does not have. See
 /// [`crate::reply::synth::NSet`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SGet {
     /// The synth.
@@ -77,7 +77,7 @@ impl Payload for SGet {
 
 /// The arguments of `/s_getn`: scsynth replies `/n_setn` with the values of
 /// each range. See [`crate::reply::synth::NSetn`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SGetn {
     /// The synth.
@@ -87,7 +87,7 @@ pub struct SGetn {
 }
 
 /// A range of `/s_getn`: controls from one.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RangeRequest {
     /// The first control of the range.
@@ -121,7 +121,7 @@ impl Payload for SGetn {
 /// The arguments of `/s_noid`: the synths keep running under IDs that the
 /// server picks, and their own IDs are free again. scsynth sends no
 /// notification for it, nor for the synths afterwards.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SNoid {
     /// The synths.
@@ -285,7 +285,7 @@ mod tests {
             Float(1.0),
         ];
         assert_eq!(
-            crate::codec::Message::to_osc(&Command::SNew(new)).args,
+            crate::codec::sealed::Codec::to_osc(&Command::SNew(new)).args,
             wire
         );
     }

@@ -12,12 +12,13 @@ use crate::types::BufferId;
 /// Some failures still end with `/done`: `/d_recv` of invalid bytes, and
 /// the reads of a buffer whose start frame is past its end. A failed
 /// allocation of `/b_alloc` ends with no reply at all.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case")
 )]
+#[non_exhaustive]
 pub enum Done {
     /// `/done /quit`.
     Quit,
@@ -56,6 +57,7 @@ pub enum Done {
 /// The buffer commands whose `/done` names the buffer.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub enum BufferCommand {
     /// `/b_alloc`.
     #[cfg_attr(feature = "serde", serde(rename = "/b_alloc"))]
@@ -104,6 +106,7 @@ impl BufferCommand {
     ];
 
     /// The address of the command.
+    #[must_use]
     pub fn address(self) -> &'static str {
         match self {
             Self::BAlloc => "/b_alloc",
@@ -181,7 +184,7 @@ impl Payload for Done {
 /// The failures that a command returns depend on the mode of `/error`.
 /// `Command not found`, the failures of `/notify` and the failures of the
 /// background stages of asynchronous commands are always sent.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Fail {
     /// The command, as scsynth names it: its address, or the name without

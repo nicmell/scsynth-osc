@@ -11,7 +11,7 @@ use crate::error::DecodeError;
 /// - `/done /notify` once its registration ends;
 /// - `/fail /notify` when the sender is already registered, when the server
 ///   has `maxLogins` clients, or when an unregistered sender asks to end.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Notify {
     /// Whether the sender receives notifications from now on.

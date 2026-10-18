@@ -92,7 +92,7 @@ impl Payload for DLoadDir {
 
 /// The arguments of `/d_free`. The definitions go at once; the synths that
 /// use them keep running. scsynth ignores unknown names, and sends no reply.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DFree {
     /// The names of the definitions.
@@ -221,9 +221,9 @@ mod tests {
     fn a_completion_message_holds_commands_and_no_nested_bundle() {
         let unknown = Blob(bytes("/beat", vec![]));
         let nested = rosc::encoder::encode(&OscPacket::Bundle(OscBundle {
-            timetag: Timetag::IMMEDIATELY.into(),
+            timetag: Timetag::IMMEDIATELY.to_osc(),
             content: vec![OscPacket::Bundle(OscBundle {
-                timetag: Timetag::IMMEDIATELY.into(),
+                timetag: Timetag::IMMEDIATELY.to_osc(),
                 content: vec![],
             })],
         }))

@@ -10,7 +10,7 @@ use crate::types::{Control, ControlSetting, NodeId, Number, OrderAction};
 
 /// The arguments of `/n_free`: the nodes stop, and the server frees them at
 /// once. A node that sounds can click.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NFree {
     /// The nodes.
@@ -31,7 +31,7 @@ impl Payload for NFree {
 
 /// The arguments of `/n_run`: nodes turn on or off. A node that is off
 /// does not run, and keeps its state. A node that sounds can click.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NRun {
     /// The nodes, each with its flag.
@@ -39,7 +39,7 @@ pub struct NRun {
 }
 
 /// A node of `/n_run`, and whether it runs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeRun {
     /// The node.
@@ -206,19 +206,19 @@ impl Payload for NFill {
 /// The arguments of `/n_map` and `/n_mapa`: controls read buses, control
 /// buses for `/n_map` and audio buses for `/n_mapa`. A control that reads
 /// an audio bus takes the full rate only when its rate is `\ar`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NMap {
     /// The node.
     pub node: NodeId,
     /// The controls and their buses.
-    pub mappings: Vec<ControlBus>,
+    pub mappings: Vec<ControlMapping>,
 }
 
 /// A control of `/n_map` or `/n_mapa`, and its bus.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ControlBus {
+pub struct ControlMapping {
     /// The control.
     pub control: Control,
     /// The index of the bus. -1, as any negative index, undoes the mapping.
@@ -240,7 +240,7 @@ impl Payload for NMap {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         let node = NodeId::read(reader)?;
         let mappings = reader.rest(|reader| {
-            Ok(ControlBus {
+            Ok(ControlMapping {
                 control: Control::read(reader)?,
                 bus: reader.int()?,
             })
@@ -252,20 +252,20 @@ impl Payload for NMap {
 /// The arguments of `/n_mapn` and `/n_mapan`: ranges of controls read
 /// consecutive buses, control buses for `/n_mapn` and audio buses for
 /// `/n_mapan`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NMapn {
     /// The node.
     pub node: NodeId,
     /// The ranges and their first buses.
-    pub mappings: Vec<ControlBusRange>,
+    pub mappings: Vec<ControlMappingRange>,
 }
 
 /// A range of `/n_mapn` or `/n_mapan`: controls from one, and the bus of
 /// the first one.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ControlBusRange {
+pub struct ControlMappingRange {
     /// The first control of the range.
     pub control: Control,
     /// The bus of the first control. The next control reads the next bus.
@@ -293,7 +293,7 @@ impl Payload for NMapn {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         let node = NodeId::read(reader)?;
         let mappings = reader.rest(|reader| {
-            Ok(ControlBusRange {
+            Ok(ControlMappingRange {
                 control: Control::read(reader)?,
                 bus: reader.int()?,
                 count: reader.int()?,
@@ -306,7 +306,7 @@ impl Payload for NMapn {
 /// The arguments of `/n_before` and `/n_after`: nodes move just before, or
 /// just after, their targets, into the groups of the targets. scsynth skips
 /// a pair whose node or target is missing.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NBefore {
     /// The moves, in order.
@@ -314,7 +314,7 @@ pub struct NBefore {
 }
 
 /// A move of `/n_before` or `/n_after`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeMove {
     /// The node that moves.
@@ -347,7 +347,7 @@ impl Payload for NBefore {
 
 /// The arguments of `/n_query`: scsynth sends `/n_info` for each node to
 /// every registered client.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NQuery {
     /// The nodes.
@@ -369,7 +369,7 @@ impl Payload for NQuery {
 /// The arguments of `/n_trace`: for one control period, scsynth prints the
 /// inputs and outputs of the unit generators of each synth, and the nodes
 /// of each group.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NTrace {
     /// The nodes.
@@ -391,7 +391,7 @@ impl Payload for NTrace {
 /// The arguments of `/n_order`: nodes move next to a target, in the order
 /// given. scsynth skips the nodes that are missing, and fails when none is
 /// left.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NOrder {
     /// Where the nodes go, relative to the target.
@@ -640,11 +640,11 @@ mod tests {
         let map = NMap {
             node: NodeId(1000),
             mappings: vec![
-                ControlBus {
+                ControlMapping {
                     control: Control::from("freq"),
                     bus: 3,
                 },
-                ControlBus {
+                ControlMapping {
                     control: Control::Index(1),
                     bus: -1,
                 },
@@ -655,7 +655,7 @@ mod tests {
         assert_wire(&Command::NMapa(map), "/n_mapa", wire());
         let mapn = NMapn {
             node: NodeId(1000),
-            mappings: vec![ControlBusRange {
+            mappings: vec![ControlMappingRange {
                 control: Control::from("freqs"),
                 bus: 8,
                 count: 4,

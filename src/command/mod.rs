@@ -13,13 +13,15 @@ pub mod unit_generator;
 
 use rosc::{OscBundle, OscPacket, OscType};
 
-use crate::codec::{Message, Reader, Writer, messages};
+use crate::codec::sealed::Codec;
+use crate::codec::{Reader, Writer, messages};
 use crate::error::{DecodeError, DecodeErrorKind};
 use crate::packet::{Timetag, decode_osc, encode_osc};
 
 messages! {
     /// A command for scsynth: one variant per address of the Server Command
     /// Reference.
+    #[non_exhaustive]
     Command {
         /// `/quit`: the server quits. It replies `/done /quit`.
         "/quit" => Quit,
@@ -189,7 +191,7 @@ impl Completion {
         match self {
             Self::Message(command) => encode_osc(&OscPacket::Message(command.to_osc())),
             Self::Bundle { time, commands } => encode_osc(&OscPacket::Bundle(OscBundle {
-                timetag: (*time).into(),
+                timetag: time.to_osc(),
                 content: commands
                     .iter()
                     .map(|command| OscPacket::Message(command.to_osc()))
@@ -204,7 +206,7 @@ impl Completion {
                 Command::from_osc(&message).map(|command| Self::Message(Box::new(command)))
             }
             OscPacket::Bundle(bundle) => Ok(Self::Bundle {
-                time: bundle.timetag.into(),
+                time: Timetag::from_osc(bundle.timetag),
                 commands: bundle
                     .content
                     .iter()

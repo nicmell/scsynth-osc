@@ -14,7 +14,7 @@ use super::node::write_nodes;
 /// use fails, except for a group that is already in the group where the
 /// new one goes: scsynth leaves it in its place, and sends `/n_go` for it
 /// again. [`AddAction::Replace`] has no such exception.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GNew {
     /// The groups, created in order.
@@ -22,7 +22,7 @@ pub struct GNew {
 }
 
 /// A group of `/g_new` or `/p_new`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NewGroup {
     /// The ID of the group.
@@ -60,7 +60,7 @@ impl Payload for GNew {
 
 /// The arguments of `/g_head` and `/g_tail`: nodes move to the head, or to
 /// the tail, of groups. The head runs first.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GHead {
     /// The moves, in order.
@@ -68,7 +68,7 @@ pub struct GHead {
 }
 
 /// A move of `/g_head` or `/g_tail`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GroupMove {
     /// The group.
@@ -102,7 +102,7 @@ impl Payload for GHead {
 /// The arguments of `/g_freeAll` and `/g_deepFree`. `/g_freeAll` frees
 /// every node in the groups. `/g_deepFree` frees every synth in the groups
 /// and in the groups inside them, and keeps the groups.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GFreeAll {
     /// The groups.
@@ -128,7 +128,7 @@ impl Payload for GFreeAll {
 /// scsynth print the tree of each group. `/g_queryTree` makes it reply
 /// `/g_queryTree.reply` for each group: see
 /// [`crate::reply::group::GQueryTreeReply`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GDumpTree {
     /// The groups.
@@ -136,7 +136,7 @@ pub struct GDumpTree {
 }
 
 /// A group of `/g_dumpTree` or `/g_queryTree`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TreeRequest {
     /// The group.

@@ -3,14 +3,14 @@
 use std::fmt;
 
 /// Why bytes do not decode as a command or a reply of scsynth.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DecodeError {
     address: String,
     kind: DecodeErrorKind,
 }
 
 /// What is wrong with the bytes.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DecodeErrorKind {
     /// The bytes are not an OSC packet. The text is the reason that the OSC
@@ -21,6 +21,7 @@ pub enum DecodeErrorKind {
     /// No message of the protocol has this address.
     UnknownAddress,
     /// The message ends before one of its arguments.
+    #[non_exhaustive]
     Missing {
         /// The position of the missing argument.
         index: usize,
@@ -28,6 +29,7 @@ pub enum DecodeErrorKind {
         expected: &'static str,
     },
     /// An argument has another OSC type than the protocol gives it.
+    #[non_exhaustive]
     WrongType {
         /// The position of the argument.
         index: usize,
@@ -37,11 +39,13 @@ pub enum DecodeErrorKind {
         found: char,
     },
     /// The message goes on after its last argument.
+    #[non_exhaustive]
     Trailing {
         /// The position of the first argument too many.
         index: usize,
     },
     /// An argument has a value that the protocol does not take.
+    #[non_exhaustive]
     Invalid {
         /// The position of the argument.
         index: usize,
@@ -49,6 +53,7 @@ pub enum DecodeErrorKind {
         reason: String,
     },
     /// The completion message of an asynchronous command does not decode.
+    #[non_exhaustive]
     Completion {
         /// The position of the completion message.
         index: usize,
@@ -67,11 +72,13 @@ impl DecodeError {
 
     /// The address of the message. It is empty when the bytes are not an OSC
     /// message.
+    #[must_use]
     pub fn address(&self) -> &str {
         &self.address
     }
 
     /// What is wrong.
+    #[must_use]
     pub fn kind(&self) -> &DecodeErrorKind {
         &self.kind
     }
@@ -111,8 +118,11 @@ impl fmt::Display for DecodeError {
             DecodeErrorKind::Invalid { index, reason } => {
                 write!(f, "{address}: argument {index}: {reason}")
             }
-            DecodeErrorKind::Completion { index, error } => {
-                write!(f, "{address}: the completion message at {index}: {error}")
+            DecodeErrorKind::Completion { index, .. } => {
+                write!(
+                    f,
+                    "{address}: the completion message at {index} does not decode"
+                )
             }
         }
     }

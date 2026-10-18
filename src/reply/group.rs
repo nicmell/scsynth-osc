@@ -31,7 +31,7 @@ pub enum GQueryTreeReply {
 
 /// A group of the tree, with the nodes inside it. `C` is what each synth
 /// carries: `()`, or its controls.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TreeGroup<C> {
     /// The group.
@@ -41,7 +41,7 @@ pub struct TreeGroup<C> {
 }
 
 /// A node of the tree.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -55,7 +55,7 @@ pub enum TreeNode<C> {
 }
 
 /// A synth of the tree.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TreeSynth<C> {
     /// The synth.
@@ -411,7 +411,7 @@ mod tests {
             addr: "/g_queryTree.reply".to_owned(),
             args: chain(MAX_DEPTH),
         };
-        assert!(<Reply as crate::codec::Message>::from_osc(&deepest).is_ok());
+        assert!(<Reply as crate::codec::sealed::Codec>::from_osc(&deepest).is_ok());
         let kind = decode_error::<Reply>("/g_queryTree.reply", chain(MAX_DEPTH + 1));
         assert!(matches!(kind, DecodeErrorKind::Invalid { .. }), "{kind:?}");
     }

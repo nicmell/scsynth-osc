@@ -1,7 +1,7 @@
 //! The strict reading and the canonical writing of arguments, and what the
 //! enums of commands and replies share.
 
-use rosc::{OscMessage, OscType};
+use rosc::OscType;
 
 use crate::error::{DecodeError, DecodeErrorKind};
 
@@ -280,14 +280,21 @@ pub(crate) trait Payload: Sized {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError>;
 }
 
-/// A command or a reply, as one OSC message. Sealed: it is public only so
-/// that [`crate::Packet`] can name it.
-pub trait Message: Sized {
-    #[doc(hidden)]
-    fn to_osc(&self) -> OscMessage;
+/// A command or a reply, as one OSC message: [`crate::Command`] or
+/// [`crate::Reply`]. Sealed.
+pub trait Message: sealed::Codec {}
 
-    #[doc(hidden)]
-    fn from_osc(message: &OscMessage) -> Result<Self, DecodeError>;
+pub(crate) mod sealed {
+    use rosc::OscMessage;
+
+    use crate::error::DecodeError;
+
+    /// The OSC form of a [`super::Message`].
+    pub trait Codec: Sized {
+        fn to_osc(&self) -> OscMessage;
+
+        fn from_osc(message: &OscMessage) -> Result<Self, DecodeError>;
+    }
 }
 
 /// Declares the enum of the commands or of the replies: one variant per
@@ -317,6 +324,7 @@ macro_rules! messages {
 
         impl $name {
             /// The OSC address of the message.
+            #[must_use]
             pub fn address(&self) -> &'static str {
                 match self {
                     $(Self::$variant { .. } => $address,)*
@@ -329,19 +337,28 @@ macro_rules! messages {
             ///
             /// On a list of more than `i32::MAX` values, which no OSC packet
             /// holds.
+            #[must_use]
             pub fn encode(&self) -> Vec<u8> {
-                $crate::packet::encode_message(<Self as $crate::codec::Message>::to_osc(self))
+                $crate::packet::encode_message(<Self as $crate::codec::sealed::Codec>::to_osc(self))
             }
 
             /// The message in `bytes`, which must hold exactly one OSC
             /// message.
+            ///
+            /// # Errors
+            ///
+            /// When the bytes are not one OSC message, or not a message of
+            /// this type. [`DecodeErrorKind`]($crate::DecodeErrorKind) says
+            /// which.
             pub fn decode(bytes: &[u8]) -> Result<Self, $crate::DecodeError> {
                 let message = $crate::packet::decode_message(bytes)?;
-                <Self as $crate::codec::Message>::from_osc(&message)
+                <Self as $crate::codec::sealed::Codec>::from_osc(&message)
             }
         }
 
-        impl $crate::codec::Message for $name {
+        impl $crate::codec::Message for $name {}
+
+        impl $crate::codec::sealed::Codec for $name {
             fn to_osc(&self) -> rosc::OscMessage {
                 let mut writer = $crate::codec::Writer::default();
                 match self {
@@ -411,6 +428,7 @@ macro_rules! coded {
 
         impl $name {
             /// The int that travels on the wire.
+            #[must_use]
             pub fn code(self) -> i32 {
                 match self {
                     $(Self::$variant => $code,)*
@@ -418,6 +436,7 @@ macro_rules! coded {
             }
 
             /// The value of `code`, when the protocol knows it.
+            #[must_use]
             pub fn from_code(code: i32) -> Option<Self> {
                 match code {
                     $($code => Some(Self::$variant),)*
@@ -456,6 +475,7 @@ macro_rules! named {
 
         impl $name {
             /// The name that travels on the wire.
+            #[must_use]
             pub fn name(self) -> &'static str {
                 match self {
                     $(Self::$variant => $text,)*
@@ -463,6 +483,7 @@ macro_rules! named {
             }
 
             /// The value that `name` names, in any case.
+            #[must_use]
             pub fn from_name(name: &str) -> Option<Self> {
                 $(
                     if name.eq_ignore_ascii_case($text) $(|| name.eq_ignore_ascii_case($alias))* {

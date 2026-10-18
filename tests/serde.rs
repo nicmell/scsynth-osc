@@ -178,7 +178,7 @@ fn a_buffer_command_names_its_buffer_and_formats() {
         header: HeaderFormat::Wav,
         sample: SampleFormat::Int24,
         frames: -1,
-        start_frame: 0,
+        buffer_frame: 0,
         leave_open: false,
         completion: None,
     };
@@ -186,7 +186,7 @@ fn a_buffer_command_names_its_buffer_and_formats() {
         &Command::BWrite(write),
         json!({"address": "/b_write", "args": {
             "buffer": 4, "path": "a.wav", "header": "wav", "sample": "int24",
-            "frames": -1, "start_frame": 0, "leave_open": false, "completion": null
+            "frames": -1, "buffer_frame": 0, "leave_open": false, "completion": null
         }}),
     );
     let fill = BGen {
@@ -208,13 +208,23 @@ fn a_buffer_command_names_its_buffer_and_formats() {
         }}}}),
     );
     let negative = json!({"address": "/b_free", "args": {"buffer": -1, "completion": null}});
-    assert!(serde_json::from_value::<Command>(negative).is_err());
+    let error = serde_json::from_value::<Command>(negative).unwrap_err();
+    assert!(
+        error.to_string().contains("-1 is not a buffer number"),
+        "{error}"
+    );
     let channels: Vec<u16> = (0..33).collect();
     let read = json!({"address": "/b_allocReadChannel", "args": {
-        "buffer": 4, "path": "a.wav", "start_frame": 0, "frames": -1,
+        "buffer": 4, "path": "a.wav", "file_frame": 0, "frames": -1,
         "channels": channels, "completion": null
     }});
-    assert!(serde_json::from_value::<Command>(read).is_err());
+    let error = serde_json::from_value::<Command>(read).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("33 channels, where a read takes at most 32"),
+        "{error}"
+    );
 }
 
 #[test]
