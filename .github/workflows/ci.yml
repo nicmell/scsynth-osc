@@ -53,3 +53,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
+
+  example:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/vite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: examples/vite/wasm
+      - uses: taiki-e/install-action@v2.87.27
+        with:
+          tool: wasm-pack@0.15.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          cache: npm
+          cache-dependency-path: examples/vite/package-lock.json
+      - name: rustfmt
+        run: cargo fmt --check --manifest-path wasm/Cargo.toml
+      - name: clippy
+        run: cargo clippy --locked --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown
+      - name: npm ci
+        run: npm ci
+      - name: wasm
+        run: npm run wasm
+      - name: build
+        run: npm run build
