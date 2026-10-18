@@ -330,6 +330,9 @@ remove it.
     are `i`, `f`, `d`, `s`, `b`, and `[` for an array. A blob serializes
     as bytes: an array of numbers in JSON, and a `Uint8Array` through
     serde-wasm-bindgen.
+  - [`examples/vite`](https://github.com/nicmell/scsynth-osc/tree/main/examples/vite)
+    runs the crate in the browser, compiled to wasm, and shows each
+    message typed, raw and as bytes.
 
 ## License
 

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>scsynth-osc playground</title>
+  </head>
+  <body>
+    <main>
+      <h1>scsynth-osc playground</h1>
+      <p>
+        One OSC message of scsynth in three forms: typed, as the library's
+        <code>Command</code> or <code>Reply</code>; raw, as its
+        <code>RawMessage</code>; and its bytes. Edit any of them: the other two
+        follow, and an error shows what the library refuses.
+      </p>
+      <div class="controls">
+        <label>Example <select id="example"></select></label>
+        <label><input type="radio" name="kind" value="command" checked /> Command</label>
+        <label><input type="radio" name="kind" value="reply" /> Reply</label>
+      </div>
+      <div class="panes">
+        <section>
+          <h2>Typed</h2>
+          <textarea id="typed" spellcheck="false"></textarea>
+          <p class="error" id="typed-error"></p>
+        </section>
+        <section>
+          <h2>Raw</h2>
+          <textarea id="raw" spellcheck="false"></textarea>
+          <p class="error" id="raw-error"></p>
+        </section>
+        <section>
+          <h2>Bytes</h2>
+          <textarea id="bytes" spellcheck="false"></textarea>
+          <p class="error" id="bytes-error"></p>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
