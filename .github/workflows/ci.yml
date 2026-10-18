@@ -37,7 +37,7 @@ jobs:
       - name: wasm32
         run: cargo check --locked --all-features --target wasm32-unknown-unknown
       - name: package
-        run: cargo package --locked
+        run: cargo package --locked --target-dir "$RUNNER_TEMP/package"
 
   msrv:
     runs-on: ubuntu-latest
