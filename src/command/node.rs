@@ -513,6 +513,15 @@ mod tests {
     }
 
     #[test]
+    fn a_set_refuses_a_bus_mapping_of_another_form() {
+        let kind = decode_error::<Command>("/n_set", vec![Int(1000), text("freq"), text("x1")]);
+        assert!(
+            matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+            "{kind:?}"
+        );
+    }
+
+    #[test]
     fn a_set_needs_a_value_for_each_control() {
         assert_eq!(
             decode_error::<Command>("/n_set", vec![Int(1000), text("freq")]),

@@ -129,6 +129,18 @@ int, a float, a bus mapping or an array.
   differently in `/s_new` and in `/n_set`, and any other type in an array
   makes it loop forever.
 
+### Round trips
+
+The bytes of a value decode back to the value, except for these values:
+
+- A string with a NUL byte. The crate writes it up to that byte.
+- A `DRecv` without bytes. Decoding refuses its empty blob.
+- A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
+  variant. Its bytes decode as that variant, or do not decode.
+- A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and
+  decodes as `None`.
+- A `/g_queryTree.reply` deeper than 128 groups. Decoding refuses it.
+
 ### Traps
 
 The crate does not rule these out:

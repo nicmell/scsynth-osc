@@ -219,7 +219,6 @@ mod tests {
 
     #[test]
     fn a_completion_message_holds_commands_and_no_nested_bundle() {
-        let unknown = Blob(bytes("/beat", vec![]));
         let nested = rosc::encoder::encode(&OscPacket::Bundle(OscBundle {
             timetag: Timetag::IMMEDIATELY.to_osc(),
             content: vec![OscPacket::Bundle(OscBundle {
@@ -228,12 +227,43 @@ mod tests {
             })],
         }))
         .expect("a bundle encodes");
-        for completion in [unknown, Blob(nested)] {
-            let kind = decode_error::<Command>("/d_load", vec![text("a"), completion]);
-            assert!(
-                matches!(kind, DecodeErrorKind::Completion { index: 1, .. }),
-                "{kind:?}"
-            );
+        for (completion, inner) in [
+            (bytes("/beat", vec![]), "unknown"),
+            (nested, "bundle"),
+            (vec![1, 2, 3], "osc"),
+        ] {
+            let kind = decode_error::<Command>("/d_load", vec![text("a"), Blob(completion)]);
+            let DecodeErrorKind::Completion { index: 1, error } = &kind else {
+                panic!("{kind:?}");
+            };
+            let found = match error.kind() {
+                DecodeErrorKind::UnknownAddress => "unknown",
+                DecodeErrorKind::Bundle => "bundle",
+                DecodeErrorKind::Osc(_) => "osc",
+                other => panic!("{other:?}"),
+            };
+            assert_eq!(found, inner);
         }
+    }
+
+    #[test]
+    fn a_completion_bundle_has_the_wire_form_of_a_bundle() {
+        let recv = Command::DRecv(DRecv {
+            data: vec![9],
+            completion: Some(Completion::Bundle {
+                time: Timetag::IMMEDIATELY,
+                commands: vec![Command::Status],
+            }),
+        });
+        let status = bytes("/status", vec![]);
+        let mut bundle = b"#bundle\0".to_vec();
+        bundle.extend([0, 0, 0, 0, 0, 0, 0, 1]);
+        bundle.extend(
+            u32::try_from(status.len())
+                .expect("a short message")
+                .to_be_bytes(),
+        );
+        bundle.extend(status);
+        assert_wire(&recv, "/d_recv", vec![Blob(vec![9]), Blob(bundle)]);
     }
 }

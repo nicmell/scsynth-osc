@@ -710,7 +710,26 @@ impl Element for IndexRange {
 
 #[cfg(test)]
 mod tests {
+    use rosc::OscType::Int;
+
     use super::*;
+    use crate::Command;
+    use crate::error::DecodeErrorKind;
+    use crate::testing::decode_error;
+
+    #[test]
+    fn a_range_of_values_has_no_negative_count() {
+        for (address, args, index) in [
+            ("/c_setn", vec![Int(0), Int(-1)], 1),
+            ("/b_setn", vec![Int(4), Int(0), Int(-1)], 2),
+        ] {
+            let kind = decode_error::<Command>(address, args);
+            assert!(
+                matches!(kind, DecodeErrorKind::Invalid { index: at, .. } if at == index),
+                "{address}: {kind:?}"
+            );
+        }
+    }
 
     #[test]
     fn a_bus_mapping_is_a_rate_and_decimal_digits() {

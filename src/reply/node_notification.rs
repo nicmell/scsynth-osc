@@ -11,8 +11,8 @@ use crate::types::NodeId;
 /// The arguments of `/n_go`, `/n_end`, `/n_off`, `/n_on`, `/n_move` and
 /// `/n_info`: a node, and its place in the tree.
 ///
-/// A missing node travels as -1, which no node has, so `Some(NodeId(-1))`
-/// encodes as `None`.
+/// A missing node travels as -1, which no node has. See
+/// [Round trips](crate#round-trips).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeState {

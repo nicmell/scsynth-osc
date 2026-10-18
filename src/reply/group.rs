@@ -387,6 +387,21 @@ mod tests {
                 found: 'i'
             }
         );
+        let synth = || vec![Int(1), Int(0), Int(1), Int(1000), Int(-1), text("default")];
+        let mut negative = synth();
+        negative.push(Int(-1));
+        let kind = decode_error::<Reply>("/g_queryTree.reply", negative);
+        assert!(
+            matches!(kind, DecodeErrorKind::Invalid { index: 6, .. }),
+            "a negative count of controls: {kind:?}"
+        );
+        let mut bus = synth();
+        bus.extend([Int(1), text("freq"), text("x1")]);
+        let kind = decode_error::<Reply>("/g_queryTree.reply", bus);
+        assert!(
+            matches!(kind, DecodeErrorKind::Invalid { index: 8, .. }),
+            "a bus mapping of another form: {kind:?}"
+        );
     }
 
     /// A chain of `depth` groups: the root and the groups inside it, one in

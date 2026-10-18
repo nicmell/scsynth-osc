@@ -1,19 +1,24 @@
 //! The JSON form of the messages, with the feature `serde`.
 #![cfg(feature = "serde")]
 
-use scsynth_osc::command::buffer::{BGen, BWrite, HeaderFormat, SampleFormat};
-use scsynth_osc::command::buffer_fill::{BufferFill, WaveFillFlags};
+use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleFormat};
+use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
+use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::SNew;
-use scsynth_osc::command::top_level::{DumpMode, Notify, SyncId};
+use scsynth_osc::command::synth_def::DLoad;
+use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
+use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
 use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
 use scsynth_osc::reply::top_level::StatusReply;
+use scsynth_osc::reply::trigger::Tr;
 use scsynth_osc::{
-    AddAction, ArrayElement, BufferId, BusMapping, Command, Control, ControlSetting, ControlValue,
-    IndexValue, NewNodeId, NodeId, Number, Reply,
+    AddAction, Argument, ArrayElement, BufferId, Bundle, BusMapping, Command, Completion, Control,
+    ControlSetting, ControlValue, IndexValue, NewNodeId, NodeId, Number, OrderAction, Packet,
+    Reply, Timetag,
 };
 use serde_json::json;
 
@@ -248,4 +253,304 @@ fn a_bus_value_is_an_int_or_a_float() {
             {"index": 1, "value": 0.5}
         ]}}),
     );
+}
+
+#[test]
+fn a_packet_is_a_message_or_a_bundle() {
+    round_trip(
+        &Packet::Message(Command::Status),
+        json!({"message": {"address": "/status"}}),
+    );
+    let bundle = Packet::Bundle(Bundle {
+        time: Timetag {
+            seconds: 7,
+            fraction: 9,
+        },
+        packets: vec![Packet::Message(Command::Sync(SyncId(1)))],
+    });
+    round_trip(
+        &bundle,
+        json!({"bundle": {
+            "time": {"seconds": 7, "fraction": 9},
+            "packets": [{"message": {"address": "/sync", "args": 1}}]
+        }}),
+    );
+}
+
+#[test]
+fn a_completion_is_a_message_or_a_bundle() {
+    let load = |completion| {
+        Command::DLoad(DLoad {
+            path: "a".to_owned(),
+            completion: Some(completion),
+        })
+    };
+    round_trip(
+        &load(Completion::Message(Box::new(Command::Status))),
+        json!({"address": "/d_load", "args": {
+            "path": "a", "completion": {"message": {"address": "/status"}}
+        }}),
+    );
+    let bundle = Completion::Bundle {
+        time: Timetag::IMMEDIATELY,
+        commands: vec![Command::Status],
+    };
+    round_trip(
+        &load(bundle),
+        json!({"address": "/d_load", "args": {"path": "a", "completion": {"bundle": {
+            "time": {"seconds": 0, "fraction": 1}, "commands": [{"address": "/status"}]
+        }}}}),
+    );
+}
+
+#[test]
+fn a_plugin_argument_names_its_type() {
+    let cmd = Cmd {
+        name: "demo".to_owned(),
+        args: vec![
+            Argument::Int(1),
+            Argument::Float(0.5),
+            Argument::Double(0.25),
+            Argument::String("x".to_owned()),
+            Argument::Blob(vec![1, 2]),
+        ],
+    };
+    round_trip(
+        &Command::Cmd(cmd),
+        json!({"address": "/cmd", "args": {"name": "demo", "args": [
+            {"int": 1}, {"float": 0.5}, {"double": 0.25}, {"string": "x"}, {"blob": [1, 2]}
+        ]}}),
+    );
+}
+
+#[test]
+fn every_done_names_its_command() {
+    let buffer = Done::Buffer {
+        command: BufferCommand::BAllocReadChannel,
+        buffer: BufferId::from(4),
+    };
+    let notify = Done::Notify {
+        client_id: 0,
+        max_logins: Some(32),
+    };
+    let plugin = Done::Plugin {
+        name: "cmdDemo".to_owned(),
+    };
+    for (done, args) in [
+        (Done::Quit, json!("quit")),
+        (
+            notify,
+            json!({"notify": {"client_id": 0, "max_logins": 32}}),
+        ),
+        (Done::NotifyOff, json!("notify_off")),
+        (Done::DRecv, json!("d_recv")),
+        (Done::DLoad, json!("d_load")),
+        (Done::DLoadDir, json!("d_load_dir")),
+        (
+            buffer,
+            json!({"buffer": {"command": "/b_allocReadChannel", "buffer": 4}}),
+        ),
+        (plugin, json!({"plugin": {"name": "cmdDemo"}})),
+    ] {
+        round_trip(
+            &Reply::Done(done),
+            json!({"address": "/done", "args": args}),
+        );
+    }
+    let fail = Fail {
+        command: "/b_read".to_owned(),
+        message: "no file\n".to_owned(),
+        value: Some(2),
+    };
+    round_trip(
+        &Reply::Fail(fail),
+        json!({"address": "/fail", "args": {
+            "command": "/b_read", "message": "no file\n", "value": 2
+        }}),
+    );
+}
+
+#[test]
+fn a_mode_or_an_action_is_its_name() {
+    for (mode, name) in [
+        (ErrorMode::Off, "off"),
+        (ErrorMode::On, "on"),
+        (ErrorMode::BundleOff, "bundle_off"),
+        (ErrorMode::BundleOn, "bundle_on"),
+    ] {
+        round_trip(
+            &Command::Error(mode),
+            json!({"address": "/error", "args": name}),
+        );
+    }
+    round_trip(
+        &Command::DumpOsc(DumpMode::ParsedAndHex),
+        json!({"address": "/dumpOSC", "args": "parsed_and_hex"}),
+    );
+    let order = NOrder {
+        action: OrderAction::Before,
+        target: NodeId(1),
+        nodes: vec![NodeId(2)],
+    };
+    round_trip(
+        &Command::NOrder(order),
+        json!({"address": "/n_order", "args": {"action": "before", "target": 1, "nodes": [2]}}),
+    );
+}
+
+#[test]
+fn every_fill_names_its_command() {
+    let flags = WaveFillFlags {
+        normalize: false,
+        wavetable: true,
+        clear: false,
+    };
+    let flags_json = json!({"normalize": false, "wavetable": true, "clear": false});
+    for (fill, json) in [
+        (
+            BufferFill::Sine2 {
+                flags,
+                partials: vec![Partial {
+                    frequency: 1.0,
+                    amplitude: 0.5,
+                }],
+            },
+            json!({"sine2": {"flags": flags_json, "partials": [
+                {"frequency": 1.0, "amplitude": 0.5}
+            ]}}),
+        ),
+        (
+            BufferFill::Sine3 {
+                flags,
+                partials: vec![PhasedPartial {
+                    frequency: 1.0,
+                    amplitude: 0.5,
+                    phase: 0.25,
+                }],
+            },
+            json!({"sine3": {"flags": flags_json, "partials": [
+                {"frequency": 1.0, "amplitude": 0.5, "phase": 0.25}
+            ]}}),
+        ),
+        (
+            BufferFill::Cheby {
+                flags,
+                amplitudes: vec![1.0],
+            },
+            json!({"cheby": {"flags": flags_json, "amplitudes": [1.0]}}),
+        ),
+        (
+            BufferFill::Copy {
+                to_frame: 0,
+                source: BufferId::from(5),
+                from_frame: 8,
+                frames: -1,
+            },
+            json!({"copy": {"to_frame": 0, "source": 5, "from_frame": 8, "frames": -1}}),
+        ),
+        (
+            BufferFill::Plugin {
+                name: "normalize".to_owned(),
+                args: vec![Argument::Float(1.0)],
+            },
+            json!({"plugin": {"name": "normalize", "args": [{"float": 1.0}]}}),
+        ),
+    ] {
+        let generate = BGen {
+            buffer: BufferId::from(4),
+            fill,
+        };
+        round_trip(
+            &Command::BGen(generate),
+            json!({"address": "/b_gen", "args": {"buffer": 4, "fill": json}}),
+        );
+    }
+}
+
+#[test]
+fn a_synth_of_a_tree_without_controls_has_null_controls() {
+    let tree = TreeGroup {
+        id: NodeId(0),
+        children: vec![TreeNode::Synth(TreeSynth {
+            id: NodeId(1000),
+            def: "default".to_owned(),
+            controls: (),
+        })],
+    };
+    round_trip(
+        &Reply::GQueryTreeReply(GQueryTreeReply::WithoutControls(tree)),
+        json!({"address": "/g_queryTree.reply", "args": {"without_controls": {
+            "id": 0, "children": [{"synth": {"id": 1000, "def": "default", "controls": null}}]
+        }}}),
+    );
+}
+
+#[test]
+fn a_format_is_its_first_name_as_written() {
+    let format = |name: &str| serde_json::from_value::<HeaderFormat>(json!(name)).ok();
+    assert_eq!(format("wav"), Some(HeaderFormat::Wav));
+    assert_eq!(format("WAV"), None);
+    assert_eq!(format("wave"), None);
+}
+
+#[test]
+fn a_float_that_is_not_finite_does_not_read_back() {
+    let tr = Reply::Tr(Tr {
+        node: NodeId(1000),
+        id: 7,
+        value: f32::NAN,
+    });
+    let json = serde_json::to_value(&tr).expect("serializes");
+    assert_eq!(json["args"]["value"], serde_json::Value::Null);
+    assert!(serde_json::from_value::<Reply>(json).is_err());
+}
+
+#[test]
+fn serde_json_refuses_bundles_42_deep_and_trees_and_completions_43_deep() {
+    let reads_back = |json: &serde_json::Value| -> bool {
+        let text = json.to_string();
+        serde_json::from_str::<serde_json::Value>(&text).is_ok()
+    };
+    let bundles = |depth| {
+        let mut packet = Packet::Message(Command::Status);
+        for _ in 0..depth {
+            packet = Packet::Bundle(Bundle {
+                time: Timetag::IMMEDIATELY,
+                packets: vec![packet],
+            });
+        }
+        serde_json::to_value(packet).expect("serializes")
+    };
+    let completions = |depth| {
+        let mut command = Command::Status;
+        for _ in 0..depth {
+            command = Command::BFree(BFree {
+                buffer: BufferId::from(0),
+                completion: Some(Completion::Message(Box::new(command))),
+            });
+        }
+        serde_json::to_value(command).expect("serializes")
+    };
+    let trees = |depth: i32| {
+        let mut group = TreeGroup {
+            id: NodeId(depth - 1),
+            children: vec![],
+        };
+        for id in (0..depth - 1).rev() {
+            group = TreeGroup {
+                id: NodeId(id),
+                children: vec![TreeNode::Group(group)],
+            };
+        }
+        serde_json::to_value(Reply::GQueryTreeReply(GQueryTreeReply::WithoutControls(
+            group,
+        )))
+        .expect("serializes")
+    };
+    assert!(reads_back(&bundles(41)));
+    assert!(!reads_back(&bundles(42)));
+    assert!(reads_back(&completions(42)));
+    assert!(!reads_back(&completions(43)));
+    assert!(reads_back(&trees(42)));
+    assert!(!reads_back(&trees(43)));
 }

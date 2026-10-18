@@ -195,4 +195,51 @@ mod tests {
         );
         assert_eq!(sync(5).into_messages(), [Command::Sync(SyncId(5))]);
     }
+
+    #[test]
+    fn a_bundle_has_its_wire_form() {
+        let bundle = Packet::Bundle(Bundle {
+            time: Timetag {
+                seconds: 7,
+                fraction: 9,
+            },
+            packets: vec![Packet::Message(Command::Status)],
+        });
+        let status = b"/status\0,\0\0\0";
+        let mut wire = b"#bundle\0".to_vec();
+        wire.extend([0, 0, 0, 7, 0, 0, 0, 9]);
+        wire.extend(
+            u32::try_from(status.len())
+                .expect("a short message")
+                .to_be_bytes(),
+        );
+        wire.extend(status);
+        assert_eq!(bundle.encode(), wire);
+        assert_eq!(Packet::<Command>::decode(&wire), Ok(bundle));
+    }
+
+    #[test]
+    fn bytes_that_are_not_one_osc_packet_are_refused() {
+        let error = Packet::<Command>::decode(&[0, 1, 2]).expect_err("no OSC packet");
+        assert!(matches!(error.kind(), DecodeErrorKind::Osc(_)), "{error}");
+        let mut trailing = Command::Status.encode();
+        trailing.extend([0; 4]);
+        let error = Command::decode(&trailing).expect_err("bytes after the packet");
+        assert_eq!(
+            error.to_string(),
+            "not an OSC packet: 4 bytes after the packet"
+        );
+        assert_eq!(error.address(), "");
+    }
+
+    #[test]
+    fn a_message_is_no_bundle() {
+        let bundle = Packet::Bundle(Bundle {
+            time: Timetag::IMMEDIATELY,
+            packets: vec![Packet::Message(Command::Status)],
+        });
+        let error = Command::decode(&bundle.encode()).expect_err("a bundle");
+        assert_eq!(error.kind(), &DecodeErrorKind::Bundle);
+        assert_eq!(error.to_string(), "a bundle where one message must be");
+    }
 }

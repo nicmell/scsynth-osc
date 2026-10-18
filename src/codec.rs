@@ -496,3 +496,222 @@ macro_rules! named {
 }
 
 pub(crate) use named;
+
+#[cfg(test)]
+mod tests {
+    use std::fmt::Debug;
+
+    use rosc::OscType::{Blob, Float, Int, String as Text};
+
+    use crate::command::buffer::{HeaderFormat, SampleFormat};
+    use crate::command::buffer_fill::WaveFillFlags;
+    use crate::command::top_level::{DumpMode, ErrorMode};
+    use crate::error::DecodeErrorKind;
+    use crate::reply::command_replies::BufferCommand;
+    use crate::testing::decode_error;
+    use crate::{AddAction, Command, OrderAction, Reply};
+
+    /// Each value has its code, and no other code from -8 to 8 decodes.
+    fn assert_codes<T: Copy + Debug + PartialEq>(
+        codes: &[(T, i32)],
+        code: fn(T) -> i32,
+        from_code: fn(i32) -> Option<T>,
+    ) {
+        for &(value, wire) in codes {
+            assert_eq!(code(value), wire, "{value:?}");
+            assert_eq!(from_code(wire), Some(value), "{wire}");
+        }
+        for wire in -8..=8 {
+            if !codes.iter().any(|&(_, known)| known == wire) {
+                assert_eq!(from_code(wire), None, "{wire}");
+            }
+        }
+    }
+
+    /// Each value has its name, and decodes from it and from its other
+    /// names, in any case.
+    fn assert_names<T: Copy + Debug + PartialEq>(
+        names: &[(T, &str, &[&str])],
+        name: fn(T) -> &'static str,
+        from_name: fn(&str) -> Option<T>,
+    ) {
+        for &(value, wire, others) in names {
+            assert_eq!(name(value), wire, "{value:?}");
+            for text in [wire].iter().chain(others) {
+                assert_eq!(from_name(text), Some(value), "{text}");
+                assert_eq!(from_name(&text.to_uppercase()), Some(value), "{text}");
+            }
+        }
+    }
+
+    #[test]
+    fn every_coded_value_has_its_code_in_scsynth() {
+        assert_codes(
+            &[
+                (AddAction::Head, 0),
+                (AddAction::Tail, 1),
+                (AddAction::Before, 2),
+                (AddAction::After, 3),
+                (AddAction::Replace, 4),
+            ],
+            AddAction::code,
+            AddAction::from_code,
+        );
+        assert_codes(
+            &[
+                (OrderAction::Head, 0),
+                (OrderAction::Tail, 1),
+                (OrderAction::Before, 2),
+                (OrderAction::After, 3),
+            ],
+            OrderAction::code,
+            OrderAction::from_code,
+        );
+        assert_codes(
+            &[
+                (DumpMode::Off, 0),
+                (DumpMode::Parsed, 1),
+                (DumpMode::Hex, 2),
+                (DumpMode::ParsedAndHex, 3),
+            ],
+            DumpMode::code,
+            DumpMode::from_code,
+        );
+        assert_codes(
+            &[
+                (ErrorMode::Off, 0),
+                (ErrorMode::On, 1),
+                (ErrorMode::BundleOff, -1),
+                (ErrorMode::BundleOn, -2),
+            ],
+            ErrorMode::code,
+            ErrorMode::from_code,
+        );
+        let flags = |normalize, wavetable, clear| WaveFillFlags {
+            normalize,
+            wavetable,
+            clear,
+        };
+        assert_codes(
+            &[
+                (flags(false, false, false), 0),
+                (flags(true, false, false), 1),
+                (flags(false, true, false), 2),
+                (flags(true, true, false), 3),
+                (flags(false, false, true), 4),
+                (flags(true, false, true), 5),
+                (flags(false, true, true), 6),
+                (flags(true, true, true), 7),
+            ],
+            WaveFillFlags::bits,
+            WaveFillFlags::from_bits,
+        );
+        for (command, address) in [
+            (BufferCommand::BAlloc, "/b_alloc"),
+            (BufferCommand::BAllocRead, "/b_allocRead"),
+            (BufferCommand::BAllocReadChannel, "/b_allocReadChannel"),
+            (BufferCommand::BRead, "/b_read"),
+            (BufferCommand::BReadChannel, "/b_readChannel"),
+            (BufferCommand::BWrite, "/b_write"),
+            (BufferCommand::BFree, "/b_free"),
+            (BufferCommand::BZero, "/b_zero"),
+            (BufferCommand::BGen, "/b_gen"),
+            (BufferCommand::BClose, "/b_close"),
+        ] {
+            assert_eq!(command.address(), address);
+        }
+    }
+
+    #[test]
+    fn every_format_has_its_names_in_scsynth() {
+        assert_names(
+            &[
+                (HeaderFormat::Aiff, "aiff", &["aifc"]),
+                (HeaderFormat::Wav, "wav", &["wave", "riff"]),
+                (HeaderFormat::WavEx, "wavex", &[]),
+                (HeaderFormat::Next, "next", &["sun"]),
+                (HeaderFormat::Ircam, "ircam", &[]),
+                (HeaderFormat::Raw, "raw", &[]),
+                (HeaderFormat::Mat4, "mat4", &[]),
+                (HeaderFormat::Mat5, "mat5", &[]),
+                (HeaderFormat::Paf, "paf", &[]),
+                (HeaderFormat::Svx, "svx", &[]),
+                (HeaderFormat::Nist, "nist", &[]),
+                (HeaderFormat::Voc, "voc", &[]),
+                (HeaderFormat::W64, "w64", &[]),
+                (HeaderFormat::Pvf, "pvf", &[]),
+                (HeaderFormat::Xi, "xi", &[]),
+                (HeaderFormat::Htk, "htk", &[]),
+                (HeaderFormat::Sds, "sds", &[]),
+                (HeaderFormat::Avr, "avr", &[]),
+                (HeaderFormat::Sd2, "sd2", &[]),
+                (HeaderFormat::Flac, "flac", &[]),
+                (HeaderFormat::Ogg, "ogg", &[]),
+                (HeaderFormat::Caf, "caf", &[]),
+                (HeaderFormat::Rf64, "rf64", &[]),
+                (HeaderFormat::Mpeg, "mpeg", &[]),
+            ],
+            HeaderFormat::name,
+            HeaderFormat::from_name,
+        );
+        assert_names(
+            &[
+                (SampleFormat::Uint8, "uint8", &[]),
+                (SampleFormat::Int8, "int8", &[]),
+                (SampleFormat::Int16, "int16", &[]),
+                (SampleFormat::Int24, "int24", &[]),
+                (SampleFormat::Int32, "int32", &[]),
+                (SampleFormat::Float, "float", &[]),
+                (SampleFormat::Double, "double", &[]),
+                (SampleFormat::Mulaw, "mulaw", &["ulaw"]),
+                (SampleFormat::Alaw, "alaw", &[]),
+                (SampleFormat::Vorbis, "vorbis", &[]),
+                (SampleFormat::Opus, "opus", &[]),
+                (SampleFormat::Mp1, "mp1", &[]),
+                (SampleFormat::Mp2, "mp2", &[]),
+                (SampleFormat::Mp3, "mp3", &[]),
+            ],
+            SampleFormat::name,
+            SampleFormat::from_name,
+        );
+        assert_eq!(SampleFormat::from_name(""), None);
+    }
+
+    #[test]
+    fn a_string_a_blob_and_a_double_take_no_other_type() {
+        assert_eq!(
+            decode_error::<Command>("/d_load", vec![Int(1)]),
+            DecodeErrorKind::WrongType {
+                index: 0,
+                expected: "a string",
+                found: 'i'
+            }
+        );
+        assert_eq!(
+            decode_error::<Command>("/d_recv", vec![Text("a".to_owned())]),
+            DecodeErrorKind::WrongType {
+                index: 0,
+                expected: "a blob",
+                found: 's'
+            }
+        );
+        let mut status: Vec<_> = [1, 0, 0, 1, 0].map(Int).into();
+        status.extend([Float(0.5), Float(1.5), Float(44_100.0)]);
+        assert_eq!(
+            decode_error::<Reply>("/status.reply", status),
+            DecodeErrorKind::WrongType {
+                index: 7,
+                expected: "a double",
+                found: 'f'
+            }
+        );
+        assert_eq!(
+            decode_error::<Command>("/sync", vec![Blob(vec![7])]),
+            DecodeErrorKind::WrongType {
+                index: 0,
+                expected: "an int",
+                found: 'b'
+            }
+        );
+    }
+}

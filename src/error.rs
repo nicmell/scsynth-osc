@@ -136,3 +136,56 @@ impl std::error::Error for DecodeError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use rosc::OscType::{Blob, Float, Int, String as Text};
+
+    use crate::testing::bytes;
+    use crate::{Command, Reply};
+
+    #[test]
+    fn an_error_names_its_message_and_its_argument() {
+        for (error, text) in [
+            (
+                Reply::decode(&bytes("/beat", vec![])).err(),
+                "/beat: no such message",
+            ),
+            (
+                Command::decode(&bytes("/sync", vec![])).err(),
+                "/sync: argument 0 is missing, it must be an int",
+            ),
+            (
+                Command::decode(&bytes("/sync", vec![Float(7.0)])).err(),
+                "/sync: argument 0 has the type 'f', it must be an int",
+            ),
+            (
+                Command::decode(&bytes("/status", vec![Int(1)])).err(),
+                "/status: the message goes on after its last argument, at 0",
+            ),
+            (
+                Command::decode(&bytes("/notify", vec![Int(2)])).err(),
+                "/notify: argument 0: 2 is not 1 or 0",
+            ),
+        ] {
+            let error = error.expect(text);
+            assert_eq!(error.to_string(), text);
+            assert!(error.source().is_none(), "{error}");
+        }
+    }
+
+    #[test]
+    fn a_completion_error_holds_the_error_of_its_message() {
+        let completion = Blob(bytes("/beat", vec![]));
+        let error = Command::decode(&bytes("/d_load", vec![Text("a".to_owned()), completion]))
+            .expect_err("the completion message does not decode");
+        assert_eq!(
+            error.to_string(),
+            "/d_load: the completion message at 1 does not decode"
+        );
+        let source = error.source().expect("the error of the completion message");
+        assert_eq!(source.to_string(), "/beat: no such message");
+    }
+}

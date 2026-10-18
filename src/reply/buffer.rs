@@ -65,8 +65,18 @@ mod tests {
 
     use super::*;
     use crate::Reply;
-    use crate::testing::assert_wire;
+    use crate::error::DecodeErrorKind;
+    use crate::testing::{assert_wire, decode_error};
     use crate::types::{IndexValue, IndexValues};
+
+    #[test]
+    fn a_reply_names_no_negative_buffer() {
+        let kind = decode_error::<Reply>("/b_info", vec![Int(-1), Int(0), Int(0), Float(0.0)]);
+        assert!(
+            matches!(kind, DecodeErrorKind::Invalid { index: 0, .. }),
+            "{kind:?}"
+        );
+    }
 
     #[test]
     fn the_buffer_answers_have_their_wire_form() {

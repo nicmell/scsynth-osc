@@ -135,6 +135,17 @@ impl Server {
         self.wait(|reply| matches!(reply, Reply::Done(found) if found == done).then_some(()));
     }
 
+    /// The `/done` of a command whose completion message replied: it must
+    /// come after that reply.
+    fn done_after(&mut self, done: &Done) {
+        let early = self
+            .pending
+            .iter()
+            .any(|reply| matches!(reply, Reply::Done(found) if found == done));
+        assert!(!early, "{done:?} came before the completion message");
+        self.done(done);
+    }
+
     fn state(&mut self, node: i32, notification: fn(&Reply) -> Option<&NodeState>) -> NodeState {
         self.wait(|reply| {
             notification(reply)
@@ -237,13 +248,12 @@ fn the_top_level_and_synth_definition_commands() {
     server.send(&Command::ClearSched);
     server.sync();
 
-    // The completion message runs before the /done of its command.
     server.send(&Command::DRecv(DRecv {
         data: std::fs::read(synthdef()).expect("the synth definition file"),
         completion: Some(Completion::Message(Box::new(Command::Status))),
     }));
     server.wait(|reply| matches!(reply, Reply::StatusReply(_)).then_some(()));
-    server.done(&Done::DRecv);
+    server.done_after(&Done::DRecv);
     server.send(&Command::DLoad(DLoad {
         path: synthdef().display().to_string(),
         completion: None,
@@ -604,7 +614,7 @@ fn allocate(server: &mut Server, buffer: BufferId) {
         ),
         (buffer, 64, 1, 22_050.0)
     );
-    server.done(&buffer_done(BufferCommand::BAlloc, buffer));
+    server.done_after(&buffer_done(BufferCommand::BAlloc, buffer));
 }
 
 fn set_samples(server: &mut Server, buffer: BufferId) {

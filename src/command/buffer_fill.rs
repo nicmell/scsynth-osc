@@ -328,6 +328,12 @@ mod tests {
                 expected: "an int"
             }
         );
+        let negative = vec![Int(4), text("copy"), Int(0), Int(-1), Int(8), Int(-1)];
+        let kind = decode_error::<Command>("/b_gen", negative);
+        assert!(
+            matches!(kind, DecodeErrorKind::Invalid { index: 3, .. }),
+            "{kind:?}"
+        );
     }
 
     #[test]

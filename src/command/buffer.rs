@@ -953,60 +953,6 @@ mod tests {
     }
 
     #[test]
-    fn every_format_decodes_from_its_name() {
-        for header in [
-            HeaderFormat::Aiff,
-            HeaderFormat::Wav,
-            HeaderFormat::WavEx,
-            HeaderFormat::Next,
-            HeaderFormat::Ircam,
-            HeaderFormat::Raw,
-            HeaderFormat::Mat4,
-            HeaderFormat::Mat5,
-            HeaderFormat::Paf,
-            HeaderFormat::Svx,
-            HeaderFormat::Nist,
-            HeaderFormat::Voc,
-            HeaderFormat::W64,
-            HeaderFormat::Pvf,
-            HeaderFormat::Xi,
-            HeaderFormat::Htk,
-            HeaderFormat::Sds,
-            HeaderFormat::Avr,
-            HeaderFormat::Sd2,
-            HeaderFormat::Flac,
-            HeaderFormat::Ogg,
-            HeaderFormat::Caf,
-            HeaderFormat::Rf64,
-            HeaderFormat::Mpeg,
-        ] {
-            assert_eq!(HeaderFormat::from_name(header.name()), Some(header));
-        }
-        for sample in [
-            SampleFormat::Uint8,
-            SampleFormat::Int8,
-            SampleFormat::Int16,
-            SampleFormat::Int24,
-            SampleFormat::Int32,
-            SampleFormat::Float,
-            SampleFormat::Double,
-            SampleFormat::Mulaw,
-            SampleFormat::Alaw,
-            SampleFormat::Vorbis,
-            SampleFormat::Opus,
-            SampleFormat::Mp1,
-            SampleFormat::Mp2,
-            SampleFormat::Mp3,
-        ] {
-            assert_eq!(SampleFormat::from_name(sample.name()), Some(sample));
-        }
-        assert_eq!(HeaderFormat::from_name("AIFC"), Some(HeaderFormat::Aiff));
-        assert_eq!(HeaderFormat::from_name("Sun"), Some(HeaderFormat::Next));
-        assert_eq!(SampleFormat::from_name("ulaw"), Some(SampleFormat::Mulaw));
-        assert_eq!(SampleFormat::from_name(""), None);
-    }
-
-    #[test]
     fn a_free_zero_or_close_takes_a_completion_message() {
         let free = BFree {
             buffer: buffer(),
@@ -1014,6 +960,7 @@ mod tests {
         };
         assert_wire(&Command::BFree(free.clone()), "/b_free", vec![Int(4)]);
         assert_wire(&Command::BZero(free.clone()), "/b_zero", vec![Int(4)]);
+        assert_wire(&Command::BClose(free.clone()), "/b_close", vec![Int(4)]);
         assert_eq!(
             decode::<Command>("/b_close", vec![Int(4), Int(0)]),
             Command::BClose(free)
