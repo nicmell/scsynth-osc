@@ -7,11 +7,11 @@ use crate::types::BufferId;
 
 /// The arguments of `/done`: which asynchronous command completed. scsynth
 /// sends it to the sender of the command, once the completion message of
-/// the command ran.
+/// the command ran or was scheduled.
 ///
 /// Some failures still end with `/done`: `/d_recv` of invalid bytes, and
-/// the reads of a buffer whose start frame is past its end. A failed
-/// allocation of `/b_alloc` ends with no reply at all.
+/// the reads whose `buffer_frame` is at or past the end of the buffer. A
+/// failed allocation of `/b_alloc` ends with no reply at all.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
@@ -191,7 +191,8 @@ pub struct Fail {
     /// the slash when the sender used that alias.
     pub command: String,
     /// The error, verbatim. The messages of the background stages, such as
-    /// `File '…' could not be opened: …`, end with a newline.
+    /// `File '…' could not be opened: …`, end with a newline, except the
+    /// paths of `/d_load` and `/d_loadDir`.
     pub message: String,
     /// The buffer number, for a failure of an asynchronous buffer command;
     /// the existing client ID, for `/notify` from a registered sender.

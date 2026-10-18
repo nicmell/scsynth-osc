@@ -162,7 +162,7 @@ pub struct NFill {
 pub struct ControlFill {
     /// The first control of the range.
     pub control: Control,
-    /// The number of controls.
+    /// The number of controls. A large count is a [trap](crate#traps).
     pub count: i32,
     /// The value.
     pub value: Number,
@@ -273,7 +273,7 @@ pub struct ControlMappingRange {
     /// any other negative index, so the later controls of the range read
     /// buses from 0.
     pub bus: i32,
-    /// The number of controls.
+    /// The number of controls. A large count is a [trap](crate#traps).
     pub count: i32,
 }
 

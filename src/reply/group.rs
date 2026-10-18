@@ -7,8 +7,7 @@ use crate::error::DecodeError;
 use crate::types::{BusMapping, Control, NodeId};
 
 /// The deepest tree that decoding takes, in groups from the root. Decoding
-/// recurses once per group: the limit bounds its stack, as the limit of 128
-/// of `serde_json` does.
+/// recurses once per group: the limit bounds its stack.
 const MAX_DEPTH: usize = 128;
 
 /// The arguments of `/g_queryTree.reply`: a group, and every node inside

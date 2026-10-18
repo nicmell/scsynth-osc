@@ -451,7 +451,8 @@ pub(crate) use coded;
 
 /// Declares an enum of the values that one string argument can name.
 /// Decoding ignores case, as scsynth does, and takes the other names of a
-/// value after `|`. Encoding writes the first name.
+/// value after `|`. Encoding writes the first name. serde takes only the
+/// first name, as it is written.
 macro_rules! named {
     (
         $(#[$meta:meta])*

@@ -26,7 +26,7 @@ impl Timetag {
 
     /// Whether scsynth runs a bundle with this time tag at once instead of
     /// scheduling it. It does so for the time tags 0 and 1
-    /// (`SC_CoreAudio.cpp`, in `PerformOSCBundle`).
+    /// (`SC_CoreAudio.cpp`, in `PerformOSCPacket`).
     #[must_use]
     pub fn is_immediate(self) -> bool {
         self.seconds == 0 && self.fraction <= 1
@@ -77,7 +77,8 @@ pub struct Bundle<T> {
 }
 
 impl<T> Packet<T> {
-    /// The messages of the packet, in order, its bundles flattened.
+    /// The messages of the packet, in the order of its bytes, its bundles
+    /// flattened.
     #[must_use]
     pub fn into_messages(self) -> Vec<T> {
         let mut messages = Vec::new();

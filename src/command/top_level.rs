@@ -16,8 +16,9 @@ use crate::error::DecodeError;
 pub struct Notify {
     /// Whether the sender receives notifications from now on.
     pub on: bool,
-    /// The client ID that the sender asks for. When another client has it,
-    /// scsynth gives the sender a free one, and no error.
+    /// The client ID that the sender asks for. -1 asks for none, as `None`
+    /// does. When another client has the ID, scsynth gives the sender a free
+    /// one, and no error.
     pub client_id: Option<i32>,
 }
 

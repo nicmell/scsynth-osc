@@ -32,10 +32,11 @@ the difference.
 
 ## The messages
 
-`Command` has one variant per command, and `Reply` one per message that
-scsynth sends. Each encodes to one OSC message and decodes from one. A
-`Packet` adds bundles. The modules `command` and `reply` follow the
-sections of the reference.
+`Command` has one variant per command of the reference, and `Reply` one
+per message of the reference that scsynth sends, except the messages
+under [Left out](#left-out). Each encodes to one OSC message and decodes
+from one. A `Packet` adds bundles. The modules `command` and `reply`
+follow the sections of the reference.
 
 | Section | Commands | Replies |
 | --- | --- | --- |
@@ -72,9 +73,9 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
 ## Strictness
 
 - Encoding writes each argument in the one OSC type that the reference
-  gives it. It writes every argument that has a default in scsynth. An
-  optional argument without a default is an `Option`, such as the client
-  ID of `/notify`. The crate leaves out a `None`.
+  gives it. It writes every argument that has a default in scsynth,
+  except the client ID of `/notify`. That ID is an `Option`, and the
+  crate leaves out a `None`. scsynth reads -1, its default, as no ID.
 - Decoding takes each argument only in that type. scsynth itself reads a
   float in place of an int, and truncates it. This crate refuses it.
 - Decoding gives an optional argument that the message leaves out the
@@ -99,7 +100,9 @@ make scsynth misread a message, hang, or write outside its memory:
 ### Completion messages
 
 An asynchronous command can carry a completion message: commands that the
-server runs once the work is done, before it replies `/done`.
+server runs once the work is done, before it replies `/done`. A bundle
+with a time tag other than 0 or 1 is scheduled instead, and can run after
+`/done`.
 
 - It is a `Completion`: one command, or a bundle of commands. A bundle
   inside it is refused, because scsynth fails on one.
@@ -133,6 +136,18 @@ The crate does not rule these out:
   the first message over the header of the bundle, and misreads the rest
   (`SC_ComPort.cpp:84-91`). Send messages and bundles in bundles of their
   own.
+- A negative count in a range of `/s_getn`, `/b_getn` or `/c_getn`, or
+  counts whose sum passes `i32::MAX`: scsynth sizes its reply by the sum
+  before it checks the ranges, and writes outside its memory
+  (`SC_MiscCmds.cpp:1546-1564`, `common/scsynthsend.h:111-121`).
+- A negative `buffer_frame` in `/b_read`, `/b_readChannel` or `/b_write`:
+  scsynth reads the file into the memory before the buffer, or writes
+  that memory to the file (`SC_SequencedCommand.cpp:623`, `915-924`,
+  `1040`).
+- A large count in a range of `/n_fill`, `/n_mapn` or `/n_mapan`: scsynth
+  steps through the count on its audio thread, and does nothing else
+  meanwhile (`SC_MiscCmds.cpp:331-405`, `601-658`). `/n_fill` of a named
+  control with a count of `i32::MAX` took 35 seconds on an Apple M5.
 
 These depend on the state of the server, so the crate cannot check them:
 
@@ -149,6 +164,21 @@ These depend on the state of the server, so the crate cannot check them:
 ### Limits
 
 - Decoding refuses a `/g_queryTree.reply` deeper than 128 groups.
+- Decoding does not limit how deep completion messages, bundles and
+  arrays nest. A deep nesting overflows the stack, and the process
+  aborts. On a stack of 1 MiB, about 1,000 nested completion messages or
+  bundles overflow a release build. That is about 20 KB of input. A debug
+  build overflows at fewer than 50 completion messages.
+- Nested completion messages take memory quadratic in their size. 65 KB
+  of them, about the largest UDP datagram, took 250 MB to decode.
+- rosc, the OSC decoder of the crate, takes some malformed packets:
+  - An array that is not closed drops the arguments before it.
+    `/sync ,i[i 5 7` decodes as `/sync 7`.
+  - In a nested bundle, an element that does not decode drops itself and
+    every element after it.
+  - The bytes of a bundle element after its message are ignored.
+- A reply with a string that is not UTF-8, such as a path in `/fail`,
+  does not decode.
 - Encoding panics on a list of more than `i32::MAX` values, which no OSC
   packet holds.
 
@@ -187,15 +217,22 @@ These depend on the state of the server, so the crate cannot check them:
 - `/version.reply` sends the commit hash at the length that git chooses,
   not always seven digits.
 - The messages of the background stages of asynchronous commands end with
-  a newline. The crate keeps them verbatim.
+  a newline, except the paths of `/d_load` and `/d_loadDir`. The crate
+  keeps them verbatim.
 
 ## Left out
 
-- `/nrt_end` is in the reference, but scsynth 3.14.1 does not implement
-  it: the server answers `Command not found`.
+- `/nrt_end` is in the reference, and `/n_cmd` in its command numbers,
+  but scsynth 3.14.1 implements neither: the server answers
+  `Command not found`.
 - `/late` is in the reference, but scsynth 3.14.1 never sends it.
-- `/d_freeAll`, `/s_newargs` and the command numbers are in scsynth but
-  not in the reference.
+- The command numbers of the reference. scsynth takes the number of a
+  command, as an int, in the place of its address. The crate writes and
+  reads addresses only.
+- `/none`, `/d_freeAll` and `/s_newargs` are in scsynth. The reference
+  lists only their command numbers.
+- An address without its leading slash, such as `status`. scsynth takes
+  it as the address with the slash.
 - These forms are in scsynth but not in the reference:
   - A node path in the place of a node ID, such as `h` for the head of a
     group.
@@ -235,6 +272,14 @@ remove it.
 - `serde`: `Serialize` and `Deserialize` for every type. A command or a
   reply is then an object with its `address` and its `args`, such as
   `{"address": "/sync", "args": 7}`.
+  - The values that take more than one type, such as `Control` and
+    `Number`, are untagged enums. They deserialize only from a format that
+    describes its own types, such as JSON.
+  - `serde_json` writes a NaN or an infinite float as `null`, and does not
+    read it back.
+  - `serde_json` reads at most 128 levels of nesting. Bundles nested 42
+    deep, and trees and completion messages nested 43 deep, do not read
+    back.
 
 ## License
 

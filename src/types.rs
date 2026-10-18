@@ -48,8 +48,9 @@ pub struct NewNodeId(i32);
 
 impl NewNodeId {
     /// The server picks a negative ID. It sends no notification for such a
-    /// node, and only [`NodeId::RECENT`] names it, until the next node is
-    /// created.
+    /// node, but `/n_info` and `/g_queryTree.reply` show the ID, which then
+    /// names the node. [`NodeId::RECENT`] also names it, until the next node
+    /// is created.
     pub const AUTO: Self = Self(-1);
 
     /// `id`, when it is -1, for [`NewNodeId::AUTO`], or 0 or more. scsynth
@@ -698,7 +699,8 @@ impl<V: Value> Element for IndexFill<V> {
 pub struct IndexRange {
     /// The index of the first sample, or of the first bus.
     pub start: i32,
-    /// The number of samples, or of buses.
+    /// The number of samples, or of buses. A negative count is a
+    /// [trap](crate#traps).
     pub count: i32,
 }
 

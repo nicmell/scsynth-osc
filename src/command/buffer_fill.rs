@@ -62,8 +62,8 @@ pub enum BufferFill {
         /// before it.
         frames: i32,
     },
-    /// A fill command that a plugin defines, such as `normalize`. A name of
-    /// another variant decodes as that variant.
+    /// A fill command that a plugin defines, such as `normalize`. Bytes with
+    /// the name of another variant decode as that variant, or fail.
     Plugin {
         /// The name of the command, as the plugin registered it.
         name: String,

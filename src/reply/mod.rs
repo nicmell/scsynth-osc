@@ -15,7 +15,9 @@ use crate::codec::messages;
 use crate::command::top_level::SyncId;
 
 messages! {
-    /// A message from scsynth: one variant per address.
+    /// A message from scsynth: one variant per message of the Server Command
+    /// Reference that scsynth sends, except those under
+    /// [Left out](crate#left-out).
     #[non_exhaustive]
     Reply {
         /// `/done`: an asynchronous command completed.

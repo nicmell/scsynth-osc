@@ -155,7 +155,8 @@ pub struct BRead {
     /// stops at the end of the buffer.
     pub frames: i32,
     /// The frame of the buffer that takes the first frame read. scsynth
-    /// takes 0 when the message ends before it.
+    /// takes 0 when the message ends before it. A negative frame is a
+    /// [trap](crate#traps).
     pub buffer_frame: i32,
     /// Whether the file stays open, for `DiskIn`. scsynth takes `false`
     /// when the message ends before it.
@@ -206,7 +207,8 @@ pub struct BReadChannel {
     /// The number of frames to read. A negative number reads to the end of
     /// the file. The read stops at the end of the buffer.
     pub frames: i32,
-    /// The frame of the buffer that takes the first frame read.
+    /// The frame of the buffer that takes the first frame read. A negative
+    /// frame is a [trap](crate#traps).
     pub buffer_frame: i32,
     /// Whether the file stays open, for `DiskIn`.
     pub leave_open: bool,
@@ -355,7 +357,7 @@ pub struct BWrite {
     /// of the buffer, as scsynth does when the message ends before it.
     pub frames: i32,
     /// The first frame of the buffer to write. scsynth takes 0 when the
-    /// message ends before it.
+    /// message ends before it. A negative frame is a [trap](crate#traps).
     pub buffer_frame: i32,
     /// Whether the file stays open, for `DiskOut`. scsynth writes the
     /// frames also then: write 0 frames for `DiskOut`. scsynth takes
@@ -393,7 +395,7 @@ impl Payload for BWrite {
 
 named! {
     /// The header format of a sound file of `/b_write`, as libsndfile
-    /// writes it. Decoding ignores case, as scsynth does.
+    /// writes it. Decoding an OSC message ignores case, as scsynth does.
     #[non_exhaustive]
     HeaderFormat {
         /// AIFF. scsynth also takes `aifc` for it.

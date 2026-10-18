@@ -19,8 +19,8 @@ use crate::error::{DecodeError, DecodeErrorKind};
 use crate::packet::{Timetag, decode_osc, encode_osc};
 
 messages! {
-    /// A command for scsynth: one variant per address of the Server Command
-    /// Reference.
+    /// A command for scsynth: one variant per command of the Server Command
+    /// Reference, except those under [Left out](crate#left-out).
     #[non_exhaustive]
     Command {
         /// `/quit`: the server quits. It replies `/done /quit`.
@@ -163,9 +163,9 @@ messages! {
     }
 }
 
-/// What an asynchronous command runs once its work is done, before the
-/// server replies `/done`. It travels as a blob in the command, and its
-/// replies go to the sender of the command.
+/// What an asynchronous command runs once its work is done. It travels as
+/// a blob in the command, and its replies go to the sender of the command.
+/// See [Completion messages](crate#completion-messages) for when it runs.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "serde",

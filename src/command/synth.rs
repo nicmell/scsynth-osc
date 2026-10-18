@@ -92,8 +92,7 @@ pub struct SGetn {
 pub struct RangeRequest {
     /// The first control of the range.
     pub control: Control,
-    /// The number of controls. scsynth echoes a negative count with no
-    /// values, a range that the crate refuses as a reply.
+    /// The number of controls. A negative count is a [trap](crate#traps).
     pub count: i32,
 }
 
