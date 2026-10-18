@@ -9,9 +9,10 @@ use crate::types::BufferId;
 /// sends it to the sender of the command, once the completion message of
 /// the command ran or was scheduled.
 ///
-/// Some failures still end with `/done`: `/d_recv` of invalid bytes, and
-/// the reads whose `buffer_frame` is at or past the end of the buffer. A
-/// failed allocation of `/b_alloc` ends with no reply at all.
+/// Some failures still end with `/done`, such as the reads whose
+/// `buffer_frame` is at or past the end of the buffer: they read nothing.
+/// See [Differences](crate#differences-from-the-reference) for `/d_recv`
+/// and `/b_alloc`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
@@ -26,9 +27,8 @@ pub enum Done {
     Notify {
         /// The ID of the sender among the clients of the server.
         client_id: i32,
-        /// How many clients the server takes at once. scsynth 3.14.1 always
-        /// sends it. The reference makes it optional, and supernova leaves it
-        /// out.
+        /// How many clients the server takes at once. See
+        /// [Differences](crate#differences-from-the-reference).
         max_logins: Option<i32>,
     },
     /// `/done /notify`: the registration of the sender ended.
@@ -181,18 +181,16 @@ impl Payload for Done {
 /// The arguments of `/fail`: a command failed. scsynth sends it to the
 /// sender of the command.
 ///
-/// The failures that a command returns depend on the mode of `/error`.
-/// `Command not found`, the failures of `/notify` and the failures of the
-/// background stages of asynchronous commands are always sent.
+/// Whether scsynth sends it depends on the mode of `/error`: see
+/// [Differences](crate#differences-from-the-reference).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Fail {
     /// The command, as scsynth names it: its address, or the name without
     /// the slash when the sender used that alias.
     pub command: String,
-    /// The error, verbatim. The messages of the background stages, such as
-    /// `File '…' could not be opened: …`, end with a newline, except the
-    /// paths of `/d_load` and `/d_loadDir`.
+    /// The error, verbatim, such as `File '…' could not be opened: …`. See
+    /// [Differences](crate#differences-from-the-reference) for its newline.
     pub message: String,
     /// The buffer number, for a failure of an asynchronous buffer command;
     /// the existing client ID, for `/notify` from a registered sender.

@@ -26,9 +26,7 @@ pub(crate) fn tag(value: &OscType) -> char {
     }
 }
 
-/// `value` as an OSC string: up to its first NUL byte, because an OSC
-/// string ends at the first one. scsynth and rosc read the bytes after it
-/// as the next arguments.
+/// `value` as an OSC string, up to its first NUL byte.
 pub(crate) fn osc_string(value: &str) -> OscType {
     let end = value.find('\0').unwrap_or(value.len());
     OscType::String(value[..end].to_owned())

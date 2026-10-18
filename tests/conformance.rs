@@ -39,7 +39,7 @@ use scsynth_osc::{
 const LEFT_OUT: [&str; 1] = ["/d_removed"];
 
 /// A client of the scsynth at `SCSYNTH_ADDR`. It keeps the replies that no
-/// test asked for yet, because scsynth sends some in an order of its own.
+/// test asked for yet.
 struct Server {
     socket: UdpSocket,
     pending: Vec<Reply>,
@@ -302,7 +302,6 @@ fn create_nodes(server: &mut Server) {
 }
 
 fn set_controls(server: &mut Server) {
-    // /s_new and /n_set set controls by name, by index and from arrays.
     server.send(&Command::NSet(NSet {
         node: NodeId(2001),
         controls: vec![
@@ -338,8 +337,6 @@ fn set_controls(server: &mut Server) {
     }));
     assert_eq!(server.controls(2001, &["freq"]), [110.0]);
 
-    // The crate writes the value of /n_fill twice. scsynth sets the controls
-    // of the range of the reference to 0.
     server.send(&Command::NFill(NFill {
         node: NodeId(2001),
         ranges: vec![ControlFill {
@@ -365,8 +362,7 @@ fn map_controls(server: &mut Server) {
             bus: 5,
         }],
     }));
-    // A range from a name stays inside the array of that name: `amp` has
-    // one control, so `pan` keeps its value.
+    // `amp` has one control in default.scsyndef.
     server.send(&Command::NMapan(NMapn {
         node: NodeId(2001),
         mappings: vec![ControlMappingRange {
@@ -389,7 +385,6 @@ fn map_controls(server: &mut Server) {
             TreeValue::Bus(BusMapping::Control(7)),
         ]
     );
-    // A range from an index runs on through the controls after it.
     server.send(&Command::NMapan(NMapn {
         node: NodeId(2001),
         mappings: vec![ControlMappingRange {
@@ -499,7 +494,6 @@ fn run_and_query(server: &mut Server) {
 }
 
 fn move_nodes(server: &mut Server) {
-    // Moves: 2002 goes after 2001, then before it, then the order flips.
     server.send(&synth(2002, AddAction::Tail, 2010));
     server.state(2002, go);
     server.send(&Command::NAfter(NBefore {

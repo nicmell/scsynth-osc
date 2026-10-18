@@ -122,7 +122,8 @@ int, a float, a bus mapping or an array.
 
 - A bus mapping travels as the string `c<index>` for a control bus or
   `a<index>` for an audio bus. Decoding takes only these forms. scsynth
-  reads `cx` as bus 0, and `c` alone as no mapping.
+  reads `cx` as bus 0, and `c` alone as no mapping. It reads the index as
+  an `i32`, so an index above `i32::MAX` undoes the mapping.
 - An array sets the control and the controls after it. It holds ints,
   floats and bus mappings, and no array: scsynth reads a nested array
   differently in `/s_new` and in `/n_set`, and any other type in an array
@@ -163,7 +164,8 @@ These depend on the state of the server, so the crate cannot check them:
 
 ### Limits
 
-- Decoding refuses a `/g_queryTree.reply` deeper than 128 groups.
+- Decoding refuses a `/g_queryTree.reply` deeper than 128 groups, which
+  bounds the stack that it takes.
 - Decoding does not limit how deep completion messages, bundles and
   arrays nest. A deep nesting overflows the stack, and the process
   aborts. On a stack of 1 MiB, about 1,000 nested completion messages or
@@ -182,17 +184,19 @@ These depend on the state of the server, so the crate cannot check them:
 - Encoding panics on a list of more than `i32::MAX` values, which no OSC
   packet holds.
 
-## Where scsynth 3.14.1 and the reference differ
+## Differences from the reference
 
 - `/notify` always replies `/done /notify clientID maxLogins` to a
   registration, also without a client ID in the command. The crate also
   decodes the reply without `maxLogins`, which the reference allows. A second
   registration fails with `notify: already registered`, and the existing
   ID (`SC_SequencedCommand.cpp:1241-1282`).
-- `/error -2` undoes one `/error -1` in a bundle. It cannot turn posting
-  on while `/error 0` turned it off. `Command not found`, and the failures
-  of the background stages of asynchronous commands, are sent in every
-  mode (`SC_Lib.cpp:184-203`).
+- `/error -1` and `/error -2` count levels in a bundle: -1 turns posting
+  off one level deeper, and -2 undoes one -1. -2 cannot turn posting on
+  while `/error 0` turned it off. The levels end with the message or the
+  bundle. `Command not found`, and the failures of the background stages
+  of asynchronous commands, are sent in every mode
+  (`SC_Lib.cpp:184-203`).
 - `/dumpOSC` reads its mode as bits. The parsed form leaves out
   `/status`, and the hex dump does not (`SC_OscUtils.hpp:176-192`).
 - `/d_recv` replies `/done` also to bytes that hold no valid synth
@@ -206,8 +210,8 @@ These depend on the state of the server, so the crate cannot check them:
   (`SC_MiscCmds.cpp:600-658`).
 - `/p_new` creates a plain group (`SC_MiscCmds.cpp:998-1002`).
 - `/g_new` takes the ID of a group that is already in the group where the
-  new one goes. It sends `/n_go` for that group again
-  (`SC_MiscCmds.cpp:898-996`).
+  new one goes, except with `AddAction::Replace`. It leaves that group in
+  its place, and sends `/n_go` for it again (`SC_MiscCmds.cpp:898-996`).
 - If `/b_alloc` cannot allocate the buffer, also for a size of 0, it
   sends no reply (`SC_SequencedCommand.cpp:292-302`).
 - If the file stays open, `/b_write` still writes its frames. For

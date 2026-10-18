@@ -70,7 +70,8 @@ pub struct VersionReply {
     pub patch: String,
     /// The git branch or tag. Builds without git send an empty string.
     pub branch: String,
-    /// The abbreviated git commit hash, of a length that git chooses.
+    /// The abbreviated git commit hash. See
+    /// [Differences](crate#differences-from-the-reference) for its length.
     /// Builds without git send `na`.
     pub commit: String,
 }

@@ -14,10 +14,8 @@ use crate::error::DecodeError;
 use crate::types::{BufferId, Element, IndexFill, IndexRange, IndexValue, IndexValues, write_all};
 
 /// The arguments of `/b_alloc`: the buffer takes new memory, of zeros. The
-/// server frees the old memory of the buffer.
-///
-/// scsynth sends no reply when it cannot allocate the memory, also not for
-/// a size of 0.
+/// server frees the old memory of the buffer. See
+/// [Differences](crate#differences-from-the-reference) for a failure.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BAlloc {
@@ -193,8 +191,7 @@ impl Payload for BRead {
 /// the file that the buffer takes.
 ///
 /// The buffer must have as many channels as the read takes: those of the
-/// file, without channels. scsynth 3.14.1 does not check it, and writes
-/// past the end of the buffer for more.
+/// file, without channels. Fewer are a [trap](crate#traps).
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BReadChannel {
@@ -246,9 +243,6 @@ impl Payload for BReadChannel {
 
 /// The channels of a sound file that a read takes, in the order that the
 /// buffer holds them. No channel at all reads every channel of the file.
-///
-/// A read takes at most 32 channels: scsynth 3.14.1 writes a 33rd channel
-/// past the end of its array of 32.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
@@ -258,7 +252,8 @@ impl Payload for BReadChannel {
 pub struct Channels(Vec<u16>);
 
 impl Channels {
-    /// The most channels that a read takes.
+    /// The most channels that a read takes. See
+    /// [Strictness](crate#strictness).
     pub const MAX: usize = 32;
 
     /// `channels`, when they are at most [`Channels::MAX`].
@@ -359,8 +354,8 @@ pub struct BWrite {
     /// The first frame of the buffer to write. scsynth takes 0 when the
     /// message ends before it. A negative frame is a [trap](crate#traps).
     pub buffer_frame: i32,
-    /// Whether the file stays open, for `DiskOut`. scsynth writes the
-    /// frames also then: write 0 frames for `DiskOut`. scsynth takes
+    /// Whether the file stays open, for `DiskOut`: see
+    /// [Differences](crate#differences-from-the-reference). scsynth takes
     /// `false` when the message ends before it.
     pub leave_open: bool,
     /// What runs once the file is written.
@@ -547,10 +542,8 @@ impl Payload for BSet {
 /// The arguments of `/b_setn`, and of the `/b_setn` that answers
 /// `/b_getn`: ranges of samples of the buffer and their values.
 ///
-/// For a command, keep each range inside the buffer. scsynth 3.14.1 reads
-/// only as many values of a range as it has samples inside the buffer,
-/// from the first value, and reads the values after them as the next
-/// ranges.
+/// For a command, keep each range inside the buffer: see
+/// [Traps](crate#traps).
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BSetn {
@@ -782,7 +775,6 @@ mod tests {
 
     #[test]
     fn an_allocation_refuses_what_scsynth_reads_as_its_channels() {
-        // scsynth reads the blob, or the rate, as the number of channels.
         for value in [sync_blob(), Float(48_000.0)] {
             let kind = decode_error::<Command>("/b_alloc", vec![Int(4), Int(1024), value]);
             assert!(
@@ -873,7 +865,6 @@ mod tests {
             "/b_allocReadChannel",
             wire,
         );
-        // The 0 that sclang sends for no completion message is a channel.
         let zero = BAllocReadChannel {
             channels: Channels::new(vec![0]).expect("one channel"),
             completion: None,

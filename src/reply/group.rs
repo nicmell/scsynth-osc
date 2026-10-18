@@ -6,15 +6,13 @@ use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
 use crate::types::{BusMapping, Control, NodeId};
 
-/// The deepest tree that decoding takes, in groups from the root. Decoding
-/// recurses once per group: the limit bounds its stack.
+/// The deepest tree that decoding takes, in groups from the root.
 const MAX_DEPTH: usize = 128;
 
 /// The arguments of `/g_queryTree.reply`: a group, and every node inside
 /// it, in the order they run. The query chooses whether the synths carry
 /// the values of their controls.
-///
-/// Decoding refuses a tree deeper than 128 groups.
+/// See [Limits](crate#limits) for its depth.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "serde",

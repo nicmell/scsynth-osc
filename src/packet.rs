@@ -66,7 +66,7 @@ pub enum Packet<T> {
 
 /// A bundle: packets that the server runs together, at its time tag.
 /// scsynth runs the messages of a bundle first, in order, then each
-/// bundle nested in it. See the README for a bundle that holds both.
+/// bundle nested in it. A bundle that holds both is a [trap](crate#traps).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bundle<T> {

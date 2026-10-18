@@ -80,8 +80,7 @@ pub(crate) fn read_plugin_args(reader: &mut Reader<'_>) -> Result<Vec<Argument>,
 
 coded! {
     /// What `/dumpOSC` makes the server print for each message it receives.
-    /// scsynth prints the parsed form without `/status`, and the hex dump
-    /// with it.
+    /// See [Differences](crate#differences-from-the-reference).
     DumpMode {
         /// Nothing.
         Off = 0,
@@ -124,14 +123,8 @@ impl Payload for SyncId {
 }
 
 coded! {
-    /// What `/error` does to the posting of errors.
-    ///
-    /// The temporary modes only count: inside a bundle, -1 turns posting off
-    /// one level deeper, and -2 undoes one -1. scsynth cannot turn posting
-    /// on with -2 while 0 turned it off. A message or a bundle ends the
-    /// temporary levels. Only the failures that a command returns depend on
-    /// the mode: `Command not found` and the failures of the background
-    /// stages of asynchronous commands are always sent.
+    /// What `/error` does to the posting of errors. See
+    /// [Differences](crate#differences-from-the-reference).
     ErrorMode {
         /// Turns posting off until a `/error 1`.
         Off = 0,

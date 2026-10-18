@@ -141,12 +141,9 @@ impl Payload for NSetn {
     }
 }
 
-/// The arguments of `/n_fill`: ranges of controls take one value each.
-///
-/// scsynth 3.14.1 reads a fourth argument for each range, and sets the
-/// controls to it, or to 0 when the message ends. The crate writes the
-/// value twice, which scsynth reads as the reference means it, and decodes
-/// a range only with the same value twice.
+/// The arguments of `/n_fill`: ranges of controls take one value each. The
+/// crate writes each value twice: see
+/// [Differences](crate#differences-from-the-reference).
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NFill {
@@ -419,7 +416,6 @@ impl Payload for NOrder {
     }
 }
 
-/// Writes each node.
 pub(crate) fn write_nodes(writer: &mut Writer, nodes: &[NodeId]) {
     for node in nodes {
         node.write(writer);
@@ -612,7 +608,6 @@ mod tests {
 
     #[test]
     fn a_fill_of_the_reference_is_refused() {
-        // scsynth 3.14.1 sets the controls to 0 for this message.
         let triple = vec![Int(1000), text("freq"), Int(3), Float(0.5)];
         assert_eq!(
             decode_error::<Command>("/n_fill", triple),

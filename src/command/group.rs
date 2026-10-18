@@ -8,12 +8,8 @@ use super::node::write_nodes;
 
 /// The arguments of `/g_new` and `/p_new`: groups, each placed relative to
 /// a target. scsynth sends `/n_go` to registered clients for each group,
-/// except for an ID that it picked.
-///
-/// scsynth 3.14.1 makes a parallel group of `/p_new` a plain group. An ID in
-/// use fails, except for a group that is already in the group where the
-/// new one goes: scsynth leaves it in its place, and sends `/n_go` for it
-/// again. [`AddAction::Replace`] has no such exception.
+/// except for an ID that it picked. An ID in use fails, with an exception:
+/// see [Differences](crate#differences-from-the-reference).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GNew {

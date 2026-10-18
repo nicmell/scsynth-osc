@@ -246,12 +246,8 @@ impl From<f32> for Number {
 }
 
 /// A bus for a control to read, in the place of a value. It travels as the
-/// string `c<index>` for a control bus, or `a<index>` for an audio bus.
-///
-/// scsynth reads the index as an `i32`: it takes an index above `i32::MAX`
-/// as a negative bus, which undoes the mapping. Decoding takes only the
-/// forms of the reference, although scsynth reads `cx` as bus 0 and `c`
-/// alone as no mapping.
+/// string `c<index>` for a control bus, or `a<index>` for an audio bus. See
+/// [Controls](crate#controls).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
@@ -483,13 +479,8 @@ impl ControlSetting {
     }
 }
 
-/// A buffer of the server: its index, from 0.
-///
-/// scsynth 3.14.1 does not check an index at or above its number of
-/// buffers, set by `-b` and 1024 by default: it acts on buffer 0, or past
-/// the end of its arrays. The crate cannot check that, because it does not
-/// know the number. scsynth reads a negative index as such an index, so the
-/// crate refuses it.
+/// A buffer of the server: its index, from 0. An index at or above the
+/// number of buffers of the server is a [trap](crate#traps).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "serde",
@@ -604,7 +595,6 @@ pub(crate) trait Element: Sized {
     fn write(&self, writer: &mut Writer);
 }
 
-/// Writes each element.
 pub(crate) fn write_all<T: Element>(writer: &mut Writer, elements: &[T]) {
     for element in elements {
         element.write(writer);

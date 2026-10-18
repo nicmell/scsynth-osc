@@ -175,9 +175,7 @@ messages! {
 pub enum Completion {
     /// One command.
     Message(Box<Command>),
-    /// Commands that run together. scsynth runs them at once when the time
-    /// tag is immediate, and schedules them otherwise. A bundle cannot hold
-    /// a bundle here: scsynth fails on one.
+    /// Commands that run together, at the time tag.
     Bundle {
         /// When the commands run.
         time: Timetag,
@@ -220,7 +218,6 @@ impl Completion {
     }
 }
 
-/// Writes the completion message, when there is one.
 pub(crate) fn write_completion(writer: &mut Writer, completion: Option<&Completion>) {
     if let Some(completion) = completion {
         writer.blob(completion.to_bytes());
@@ -228,8 +225,7 @@ pub(crate) fn write_completion(writer: &mut Writer, completion: Option<&Completi
 }
 
 /// Reads the completion message at the reader's position, when there is
-/// one. With `placeholder`, an int 0 there stands for none: scsynth skips
-/// one int in this place, and sclang sends 0 for no completion message.
+/// one. With `placeholder`, an int 0 there stands for none.
 pub(crate) fn read_completion(
     reader: &mut Reader<'_>,
     placeholder: bool,

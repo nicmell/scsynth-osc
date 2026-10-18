@@ -4,10 +4,10 @@ use super::{Completion, read_completion, write_completion};
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
 
-/// The arguments of `/d_recv`. The server replies `/done /d_recv`, even
-/// when the bytes hold no valid synth definition: it then defines nothing.
-/// It sends `/d_removed` to registered clients for each unused definition
-/// that a new one replaces.
+/// The arguments of `/d_recv`. The server replies `/done /d_recv`: see
+/// [Differences](crate#differences-from-the-reference) for bytes that hold
+/// no valid synth definition. It sends `/d_removed` to registered clients
+/// for each unused definition that a new one replaces.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DRecv {
