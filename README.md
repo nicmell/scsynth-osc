@@ -74,8 +74,9 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
 
 A `RawMessage` is one OSC message as its address and its typed arguments,
 without the meaning that a command or a reply gives them. Each argument
-is a `RawArg`: an int, a float, a double, a string, a blob, or an array
-of arguments.
+is a `RawArg`, with one variant for each OSC type that rosc reads: `i`,
+`f`, `d`, `s`, `b`, `h`, `t`, `c`, `r`, `m`, `T`, `F`, `N`, `I`, and an
+array between `[` and `]`.
 
 ```rust
 use scsynth_osc::{Command, RawArg, RawMessage, SyncId};
@@ -89,9 +90,8 @@ assert_eq!(Command::from_raw(&raw), Ok(Command::Sync(SyncId(7))));
 - `Command::to_raw` and `Reply::to_raw` give the raw form of a message.
   `from_raw` decodes it as strictly as `decode` decodes bytes, with the
   same errors.
-- `RawMessage::encode` and `RawMessage::decode` take any address.
-  Decoding refuses an argument of another OSC type than `i`, `f`, `d`,
-  `s`, `b` or an array.
+- `RawMessage::encode` and `RawMessage::decode` take any address and any
+  OSC type, and keep the type of each argument.
 - A `Packet<RawMessage>` decodes bundles too.
 - Encoding writes a string, the address too, up to its first NUL byte,
   and checks nothing else. The guarantee under [Strictness](#strictness)
@@ -326,10 +326,13 @@ remove it.
     back.
   - A `RawMessage` is an object with its `address` and its `args`, each
     with its `type` and its `data`, such as
-    `{"address": "/sync", "args": [{"type": "i", "data": 7}]}`. The types
-    are `i`, `f`, `d`, `s`, `b`, and `[` for an array. A blob serializes
-    as bytes: an array of numbers in JSON, and a `Uint8Array` through
-    serde-wasm-bindgen.
+    `{"address": "/sync", "args": [{"type": "i", "data": 7}]}`. The type
+    is the OSC tag of the argument, and `[` for an array. `T`, `F`, `N`
+    and `I` have no `data`. A blob serializes as bytes: an array of
+    numbers in JSON, and a `Uint8Array` through serde-wasm-bindgen. A
+    time tag is `{"seconds", "fraction"}`, a color is `{"red", "green",
+    "blue", "alpha"}`, and a MIDI message is `{"port", "status", "data1",
+    "data2"}`.
   - [`examples/vite`](https://github.com/nicmell/scsynth-osc/tree/main/examples/vite)
     runs the crate in the browser, compiled to wasm, and shows each
     message typed, raw and as bytes.

@@ -16,9 +16,9 @@ use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
 use scsynth_osc::reply::top_level::StatusReply;
 use scsynth_osc::reply::trigger::Tr;
 use scsynth_osc::{
-    AddAction, Argument, ArrayElement, BufferId, Bundle, BusMapping, Command, Completion, Control,
-    ControlSetting, ControlValue, IndexValue, NewNodeId, NodeId, Number, OrderAction, Packet,
-    RawArg, RawMessage, Reply, Timetag,
+    AddAction, Argument, ArrayElement, BufferId, Bundle, BusMapping, Color, Command, Completion,
+    Control, ControlSetting, ControlValue, IndexValue, MidiMessage, NewNodeId, NodeId, Number,
+    OrderAction, Packet, RawArg, RawMessage, Reply, Timetag,
 };
 use serde_json::json;
 
@@ -566,6 +566,28 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
             RawArg::String("default".to_owned()),
             RawArg::Blob(vec![1, 2]),
             RawArg::Array(vec![RawArg::Float(1.0), RawArg::String("c3".to_owned())]),
+            RawArg::Long(-2),
+            RawArg::Time(Timetag {
+                seconds: 1,
+                fraction: 2,
+            }),
+            RawArg::Char('x'),
+            RawArg::Color(Color {
+                red: 1,
+                green: 2,
+                blue: 3,
+                alpha: 4,
+            }),
+            RawArg::Midi(MidiMessage {
+                port: 1,
+                status: 144,
+                data1: 60,
+                data2: 100,
+            }),
+            RawArg::True,
+            RawArg::False,
+            RawArg::Nil,
+            RawArg::Inf,
         ],
     };
     round_trip(
@@ -576,7 +598,16 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
             {"type": "d", "data": 0.25},
             {"type": "s", "data": "default"},
             {"type": "b", "data": [1, 2]},
-            {"type": "[", "data": [{"type": "f", "data": 1.0}, {"type": "s", "data": "c3"}]}
+            {"type": "[", "data": [{"type": "f", "data": 1.0}, {"type": "s", "data": "c3"}]},
+            {"type": "h", "data": -2},
+            {"type": "t", "data": {"seconds": 1, "fraction": 2}},
+            {"type": "c", "data": "x"},
+            {"type": "r", "data": {"red": 1, "green": 2, "blue": 3, "alpha": 4}},
+            {"type": "m", "data": {"port": 1, "status": 144, "data1": 60, "data2": 100}},
+            {"type": "T"},
+            {"type": "F"},
+            {"type": "N"},
+            {"type": "I"}
         ]}),
     );
     let fraction = json!({"address": "/sync", "args": [{"type": "i", "data": 1.5}]});
