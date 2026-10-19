@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.2 (2026-10-19)
+
+### Added
+
+- `RawArg` has a variant for each OSC type that rosc reads: `Long` (`h`),
+  `Time` (`t`), `Char` (`c`), `Color` (`r`), `Midi` (`m`), `True` (`T`),
+  `False` (`F`), `Nil` (`N`) and `Inf` (`I`). `Color` and `MidiMessage`
+  are new structs, with the fields of rosc's. With the feature `serde`,
+  the `type` of each one is its OSC tag.
+
+### Changed
+
+- `RawMessage::decode` and a `Packet<RawMessage>` no longer refuse an
+  argument of those types. `Command` and `Reply` decode as strictly as
+  before.
+
 ## 0.1.1 (2026-10-18)
 
 ### Added

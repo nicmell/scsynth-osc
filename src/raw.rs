@@ -1,13 +1,11 @@
 //! OSC messages as an address and typed arguments, without the meaning
 //! that [`Command`](crate::Command) and [`Reply`](crate::Reply) give them.
 
-use rosc::{OscArray, OscMessage, OscType};
+use rosc::{OscArray, OscColor, OscMessage, OscMidiMessage, OscType};
 
-use crate::codec::{Message, sealed, tag};
-use crate::error::{DecodeError, DecodeErrorKind};
-use crate::packet::{decode_message, encode_message};
-
-const EXPECTED: &str = "an int, a float, a double, a string, a blob or an array";
+use crate::codec::{Message, sealed};
+use crate::error::DecodeError;
+use crate::packet::{Timetag, decode_message, encode_message};
 
 /// One OSC message: its address and its typed arguments. See
 /// [Raw messages](crate#raw-messages).
@@ -47,6 +45,61 @@ pub enum RawArg {
     /// An array of arguments, between `[` and `]`.
     #[cfg_attr(feature = "serde", serde(rename = "["))]
     Array(Vec<RawArg>),
+    /// A 64-bit integer, `h`.
+    #[cfg_attr(feature = "serde", serde(rename = "h"))]
+    Long(i64),
+    /// A time tag, `t`.
+    #[cfg_attr(feature = "serde", serde(rename = "t"))]
+    Time(Timetag),
+    /// A character, `c`.
+    #[cfg_attr(feature = "serde", serde(rename = "c"))]
+    Char(char),
+    /// A color, `r`.
+    #[cfg_attr(feature = "serde", serde(rename = "r"))]
+    Color(Color),
+    /// A MIDI message, `m`.
+    #[cfg_attr(feature = "serde", serde(rename = "m"))]
+    Midi(MidiMessage),
+    /// True, `T`, which has no data.
+    #[cfg_attr(feature = "serde", serde(rename = "T"))]
+    True,
+    /// False, `F`, which has no data.
+    #[cfg_attr(feature = "serde", serde(rename = "F"))]
+    False,
+    /// Nil, `N`, which has no data.
+    #[cfg_attr(feature = "serde", serde(rename = "N"))]
+    Nil,
+    /// Infinitum, `I`, which has no data.
+    #[cfg_attr(feature = "serde", serde(rename = "I"))]
+    Inf,
+}
+
+/// A color, the argument `r`: one byte per channel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Color {
+    /// The red channel.
+    pub red: u8,
+    /// The green channel.
+    pub green: u8,
+    /// The blue channel.
+    pub blue: u8,
+    /// The alpha channel.
+    pub alpha: u8,
+}
+
+/// A MIDI message, the argument `m`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct MidiMessage {
+    /// The port id.
+    pub port: u8,
+    /// The status byte.
+    pub status: u8,
+    /// The first data byte.
+    pub data1: u8,
+    /// The second data byte.
+    pub data2: u8,
 }
 
 impl RawMessage {
@@ -60,10 +113,9 @@ impl RawMessage {
     ///
     /// # Errors
     ///
-    /// When the bytes are not one OSC message, or an argument has another
-    /// OSC type than those of [`RawArg`].
+    /// When the bytes are not one OSC message.
     pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
-        raw_message(&decode_message(bytes)?)
+        Ok(raw_message(&decode_message(bytes)?))
     }
 }
 
@@ -75,7 +127,7 @@ impl sealed::Codec for RawMessage {
     }
 
     fn from_osc(message: &OscMessage) -> Result<Self, DecodeError> {
-        raw_message(message)
+        Ok(raw_message(message))
     }
 
     fn to_osc(&self) -> OscMessage {
@@ -106,6 +158,25 @@ fn osc_arg(arg: &RawArg) -> OscType {
         RawArg::Array(values) => OscType::Array(OscArray {
             content: values.iter().map(osc_arg).collect(),
         }),
+        RawArg::Long(value) => OscType::Long(*value),
+        RawArg::Time(time) => OscType::Time(time.to_osc()),
+        RawArg::Char(value) => OscType::Char(*value),
+        RawArg::Color(color) => OscType::Color(OscColor {
+            red: color.red,
+            green: color.green,
+            blue: color.blue,
+            alpha: color.alpha,
+        }),
+        RawArg::Midi(midi) => OscType::Midi(OscMidiMessage {
+            port: midi.port,
+            status: midi.status,
+            data1: midi.data1,
+            data2: midi.data2,
+        }),
+        RawArg::True => OscType::Bool(true),
+        RawArg::False => OscType::Bool(false),
+        RawArg::Nil => OscType::Nil,
+        RawArg::Inf => OscType::Inf,
     }
 }
 
@@ -114,59 +185,53 @@ fn up_to_nul(value: &str) -> &str {
 }
 
 /// The raw form of `message`, as rosc reads it.
-fn raw_message(message: &OscMessage) -> Result<RawMessage, DecodeError> {
-    let args = message
-        .args
-        .iter()
-        .enumerate()
-        .map(|(index, value)| {
-            raw_arg(value).map_err(|found| {
-                DecodeError::new(
-                    &message.addr,
-                    DecodeErrorKind::WrongType {
-                        index,
-                        expected: EXPECTED,
-                        found,
-                    },
-                )
-            })
-        })
-        .collect::<Result<_, _>>()?;
-    Ok(RawMessage {
+fn raw_message(message: &OscMessage) -> RawMessage {
+    RawMessage {
         address: message.addr.clone(),
-        args,
-    })
+        args: message.args.iter().map(raw_arg).collect(),
+    }
 }
 
-/// `value` as a [`RawArg`], or the tag of the first value in it that has
-/// no raw form.
-fn raw_arg(value: &OscType) -> Result<RawArg, char> {
-    Ok(match value {
+fn raw_arg(value: &OscType) -> RawArg {
+    match value {
         OscType::Int(value) => RawArg::Int(*value),
         OscType::Float(value) => RawArg::Float(*value),
-        OscType::Double(value) => RawArg::Double(*value),
         OscType::String(value) => RawArg::String(value.clone()),
         OscType::Blob(value) => RawArg::Blob(value.clone()),
-        OscType::Array(array) => RawArg::Array(
-            array
-                .content
-                .iter()
-                .map(raw_arg)
-                .collect::<Result<_, _>>()?,
-        ),
-        other => return Err(tag(other)),
-    })
+        OscType::Time(time) => RawArg::Time(Timetag::from_osc(*time)),
+        OscType::Long(value) => RawArg::Long(*value),
+        OscType::Double(value) => RawArg::Double(*value),
+        OscType::Char(value) => RawArg::Char(*value),
+        OscType::Color(color) => RawArg::Color(Color {
+            red: color.red,
+            green: color.green,
+            blue: color.blue,
+            alpha: color.alpha,
+        }),
+        OscType::Midi(midi) => RawArg::Midi(MidiMessage {
+            port: midi.port,
+            status: midi.status,
+            data1: midi.data1,
+            data2: midi.data2,
+        }),
+        OscType::Bool(true) => RawArg::True,
+        OscType::Bool(false) => RawArg::False,
+        OscType::Array(array) => RawArg::Array(array.content.iter().map(raw_arg).collect()),
+        OscType::Nil => RawArg::Nil,
+        OscType::Inf => RawArg::Inf,
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use rosc::OscType::{Bool, Int, Long};
+    use rosc::OscTime;
 
     use super::*;
     use crate::command::buffer::BFree;
     use crate::command::synth::SNew;
     use crate::command::synth_def::DRecv;
-    use crate::packet::{Bundle, Packet, Timetag};
+    use crate::error::DecodeErrorKind;
+    use crate::packet::{Bundle, Packet};
     use crate::testing::bytes;
     use crate::{
         AddAction, ArrayElement, BufferId, BusMapping, Command, Completion, ControlSetting,
@@ -189,9 +254,31 @@ mod tests {
                 RawArg::Blob(vec![1, 2, 3]),
                 RawArg::Array(vec![
                     RawArg::Int(1),
-                    RawArg::Array(vec![text("c1")]),
+                    RawArg::Array(vec![text("c1"), RawArg::True]),
                     RawArg::Array(vec![]),
                 ]),
+                RawArg::Long(-2),
+                RawArg::Time(Timetag {
+                    seconds: 1,
+                    fraction: 2,
+                }),
+                RawArg::Char('x'),
+                RawArg::Color(Color {
+                    red: 1,
+                    green: 2,
+                    blue: 3,
+                    alpha: 4,
+                }),
+                RawArg::Midi(MidiMessage {
+                    port: 1,
+                    status: 0x90,
+                    data1: 60,
+                    data2: 100,
+                }),
+                RawArg::True,
+                RawArg::False,
+                RawArg::Nil,
+                RawArg::Inf,
             ],
         };
         assert_eq!(RawMessage::decode(&raw.encode()), Ok(raw));
@@ -240,20 +327,22 @@ mod tests {
 
     #[test]
     fn from_raw_is_as_strict_as_decode() {
-        let float = RawMessage {
-            address: "/sync".to_owned(),
-            args: vec![RawArg::Float(7.0)],
-        };
-        let error = Command::from_raw(&float).expect_err("a float is no int");
-        assert_eq!(Command::decode(&float.encode()), Err(error.clone()));
-        assert_eq!(
-            error.kind(),
-            &DecodeErrorKind::WrongType {
-                index: 0,
-                expected: "an int",
-                found: 'f'
-            }
-        );
+        for (arg, found) in [(RawArg::Float(7.0), 'f'), (RawArg::Long(7), 'h')] {
+            let sync = RawMessage {
+                address: "/sync".to_owned(),
+                args: vec![arg],
+            };
+            let error = Command::from_raw(&sync).expect_err("no int");
+            assert_eq!(Command::decode(&sync.encode()), Err(error.clone()));
+            assert_eq!(
+                error.kind(),
+                &DecodeErrorKind::WrongType {
+                    index: 0,
+                    expected: "an int",
+                    found
+                }
+            );
+        }
         let unknown = RawMessage {
             address: "/beat".to_owned(),
             args: vec![],
@@ -263,19 +352,44 @@ mod tests {
     }
 
     #[test]
-    fn a_raw_message_takes_no_other_osc_type() {
-        for (value, found) in [(Bool(true), 'T'), (Long(1), 'h')] {
-            let error =
-                RawMessage::decode(&bytes("/demo", vec![Int(1), value])).expect_err("another type");
-            assert_eq!(
-                error.kind(),
-                &DecodeErrorKind::WrongType {
-                    index: 1,
-                    expected: EXPECTED,
-                    found
-                }
-            );
-        }
+    fn every_osc_type_has_a_raw_form_that_writes_the_same_bytes() {
+        let written = bytes(
+            "/demo",
+            vec![
+                OscType::Int(1),
+                OscType::Float(0.5),
+                OscType::String("s".to_owned()),
+                OscType::Blob(vec![1]),
+                OscType::Time(OscTime {
+                    seconds: 1,
+                    fractional: 2,
+                }),
+                OscType::Long(-3),
+                OscType::Double(0.25),
+                OscType::Char('x'),
+                OscType::Color(OscColor {
+                    red: 1,
+                    green: 2,
+                    blue: 3,
+                    alpha: 4,
+                }),
+                OscType::Midi(OscMidiMessage {
+                    port: 1,
+                    status: 0x90,
+                    data1: 60,
+                    data2: 100,
+                }),
+                OscType::Bool(true),
+                OscType::Bool(false),
+                OscType::Array(OscArray {
+                    content: vec![OscType::Int(1), OscType::Nil],
+                }),
+                OscType::Nil,
+                OscType::Inf,
+            ],
+        );
+        let raw = RawMessage::decode(&written).expect("every OSC type reads");
+        assert_eq!(raw.encode(), written);
     }
 
     #[test]
