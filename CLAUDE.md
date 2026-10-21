@@ -14,7 +14,9 @@ before any work.
 - `main` is the library. Each release is a tag `v<version>`.
 - `sc-app3` adds the protocol of the pump of sc-app3
   (github.com/nicmell/sc-app3). sc-app3 takes this branch as a git
-  submodule. A change to that protocol goes to `sc-app3` only.
+  submodule. A change to that protocol goes to `sc-app3` only. Its
+  messages live in `src/command/custom/` and `src/reply/custom/`, one
+  file per family.
 - `sc-app3` takes `main` by a merge, never by a rebase or a force-push.
   The commits of sc-app3 pin commits of this branch. A rewrite orphans
   them.

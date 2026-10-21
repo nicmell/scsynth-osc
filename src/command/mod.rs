@@ -4,9 +4,9 @@
 pub mod buffer;
 pub mod buffer_fill;
 pub mod control_bus;
+pub mod custom;
 pub mod group;
 pub mod node;
-pub mod pump;
 pub mod synth;
 pub mod synth_def;
 pub mod top_level;
@@ -164,15 +164,15 @@ messages! {
         /// buses.
         "/c_getn" => CGetn(control_bus::CGetn),
         /// `/loadRoot`: the pump loads the root group of the session.
-        "/loadRoot" => LoadRoot(pump::Root),
+        "/loadRoot" => LoadRoot(custom::Root),
         /// `/unloadRoot`: the pump releases the holds of the page, and frees
         /// the root group of the session once nobody holds it.
-        "/unloadRoot" => UnloadRoot(pump::Root),
+        "/unloadRoot" => UnloadRoot(custom::Root),
         /// `/loadPlugin`: the pump loads the group of the plugin.
-        "/loadPlugin" => LoadPlugin(pump::Plugin),
+        "/loadPlugin" => LoadPlugin(custom::Plugin),
         /// `/unloadPlugin`: the pump releases the page's hold on the group of
         /// the plugin.
-        "/unloadPlugin" => UnloadPlugin(pump::Plugin),
+        "/unloadPlugin" => UnloadPlugin(custom::Plugin),
     }
 }
 

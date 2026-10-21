@@ -5,9 +5,9 @@
 pub mod buffer;
 pub mod command_replies;
 pub mod control_bus;
+pub mod custom;
 pub mod group;
 pub mod node_notification;
-pub mod pump;
 pub mod synth;
 pub mod top_level;
 pub mod trigger;
@@ -67,20 +67,20 @@ messages! {
         /// `/tr`: a `SendTrig` unit generator triggered.
         "/tr" => Tr(trigger::Tr),
         /// `/loadRoot.success`: the root group is ready.
-        "/loadRoot.success" => LoadRootSuccess(pump::Root),
+        "/loadRoot.success" => LoadRootSuccess(custom::Root),
         /// `/loadRoot.failure`: the pump refused the load, or it failed.
-        "/loadRoot.failure" => LoadRootFailure(pump::RootFailure),
+        "/loadRoot.failure" => LoadRootFailure(custom::RootFailure),
         /// `/unloadRoot.success`: the root group is free.
-        "/unloadRoot.success" => UnloadRootSuccess(pump::Root),
+        "/unloadRoot.success" => UnloadRootSuccess(custom::Root),
         /// `/unloadRoot.failure`: the pump refused the unload, or it failed.
-        "/unloadRoot.failure" => UnloadRootFailure(pump::RootFailure),
+        "/unloadRoot.failure" => UnloadRootFailure(custom::RootFailure),
         /// `/loadPlugin.success`: the group of the plugin is ready.
-        "/loadPlugin.success" => LoadPluginSuccess(pump::Plugin),
+        "/loadPlugin.success" => LoadPluginSuccess(custom::Plugin),
         /// `/loadPlugin.failure`: the pump refused the load, or it failed.
-        "/loadPlugin.failure" => LoadPluginFailure(pump::PluginFailure),
+        "/loadPlugin.failure" => LoadPluginFailure(custom::PluginFailure),
         /// `/unloadPlugin.success`: the group of the plugin is free.
-        "/unloadPlugin.success" => UnloadPluginSuccess(pump::Plugin),
+        "/unloadPlugin.success" => UnloadPluginSuccess(custom::Plugin),
         /// `/unloadPlugin.failure`: the pump refused the unload, or it failed.
-        "/unloadPlugin.failure" => UnloadPluginFailure(pump::PluginFailure),
+        "/unloadPlugin.failure" => UnloadPluginFailure(custom::PluginFailure),
     }
 }

@@ -103,7 +103,8 @@ assert_eq!(Command::from_raw(&raw), Ok(Command::Sync(SyncId(7))));
 
 This branch, `sc-app3`, also holds the messages between the pages of
 sc-app3 and the pump of their session. They are not scsynth's: the pump
-handles them, and they never reach scsynth.
+handles them, and they never reach scsynth. Their types are in the modules
+`command::custom` and `reply::custom`.
 
 | Command | Args | Answers |
 | --- | --- | --- |

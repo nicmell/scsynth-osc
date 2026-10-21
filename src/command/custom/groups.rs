@@ -1,8 +1,9 @@
-//! The commands of sc-app3's pump, which never reach scsynth. See
-//! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
+//! The commands of sc-app3's pump about the groups of a session: its root
+//! group, and the group of each of its plugins.
 
 use uuid::Uuid;
 
+use super::{read_uuid, write_uuid};
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
 
@@ -50,25 +51,6 @@ impl Payload for Plugin {
             plugin: read_uuid(reader)?,
         })
     }
-}
-
-pub(crate) fn write_uuid(writer: &mut Writer, uuid: Uuid) {
-    writer.string(&uuid.hyphenated().to_string());
-}
-
-/// A uuid, as the string that [`write_uuid`] writes.
-pub(crate) fn read_uuid(reader: &mut Reader<'_>) -> Result<Uuid, DecodeError> {
-    let index = reader.index();
-    let text = reader.string()?;
-    Uuid::try_parse(&text)
-        .ok()
-        .filter(|uuid| uuid.hyphenated().to_string() == text)
-        .ok_or_else(|| {
-            reader.invalid(
-                index,
-                format!("{text:?} is not a uuid in lowercase with hyphens"),
-            )
-        })
 }
 
 #[cfg(test)]

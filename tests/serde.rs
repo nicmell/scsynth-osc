@@ -4,17 +4,17 @@
 use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleFormat};
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
+use scsynth_osc::command::custom::{Plugin, Root};
 use scsynth_osc::command::node::NOrder;
-use scsynth_osc::command::pump::{Plugin, Root};
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
+use scsynth_osc::reply::custom::PluginFailure;
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
 use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
-use scsynth_osc::reply::pump::PluginFailure;
 use scsynth_osc::reply::top_level::StatusReply;
 use scsynth_osc::reply::trigger::Tr;
 use scsynth_osc::{

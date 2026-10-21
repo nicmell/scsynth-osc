@@ -1,19 +1,19 @@
-//! The answers of sc-app3's pump, which scsynth never sends. See
-//! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
+//! The answers of sc-app3's pump about the groups of a session: its root
+//! group, and the group of each of its plugins.
 
 use uuid::Uuid;
 
 use crate::codec::{Payload, Reader, Writer};
-use crate::command::pump::{read_uuid, write_uuid};
+use crate::command::custom::{read_uuid, write_uuid};
 use crate::error::DecodeError;
 
 /// The arguments of `/loadRoot.success` and `/unloadRoot.success`: see
-/// [`crate::command::pump::Root`].
-pub type Root = crate::command::pump::Root;
+/// [`crate::command::custom::Root`].
+pub type Root = crate::command::custom::Root;
 
 /// The arguments of `/loadPlugin.success` and `/unloadPlugin.success`: see
-/// [`crate::command::pump::Plugin`].
-pub type Plugin = crate::command::pump::Plugin;
+/// [`crate::command::custom::Plugin`].
+pub type Plugin = crate::command::custom::Plugin;
 
 /// The arguments of `/loadRoot.failure` and `/unloadRoot.failure`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
