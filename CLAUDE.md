@@ -16,7 +16,8 @@ before any work.
   (github.com/nicmell/sc-app3). sc-app3 takes this branch as a git
   submodule. A change to that protocol goes to `sc-app3` only. Its
   messages live in `src/command/custom/` and `src/reply/custom/`, one
-  file per family.
+  file per family, and a new command also goes in
+  `command::custom::ADDRESSES`.
 - `sc-app3` takes `main` by a merge, never by a rebase or a force-push.
   The commits of sc-app3 pin commits of this branch. A rewrite orphans
   them.

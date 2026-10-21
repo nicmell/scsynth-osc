@@ -6,6 +6,10 @@ mod groups;
 
 pub use groups::{Plugin, Root};
 
+/// The addresses of the commands of the pump. The pump reads them, and
+/// never passes them on to scsynth.
+pub const ADDRESSES: [&str; 4] = ["/loadRoot", "/unloadRoot", "/loadPlugin", "/unloadPlugin"];
+
 use uuid::Uuid;
 
 use crate::codec::{Reader, Writer};

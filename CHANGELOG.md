@@ -7,7 +7,8 @@
 - The messages of sc-app3's pump: `/loadRoot`, `/unloadRoot`,
   `/loadPlugin` and `/unloadPlugin`, and their `.success` and `.failure`
   answers, with their sessions and plugins as `uuid::Uuid`. Their types are
-  in the modules `command::custom` and `reply::custom`. See
+  in the modules `command::custom` and `reply::custom`, and
+  `command::custom::ADDRESSES` lists the addresses of the commands. See
   [The protocol of sc-app3's pump](README.md#the-protocol-of-sc-app3s-pump).
 
 ## 0.1.2 (2026-10-19)
