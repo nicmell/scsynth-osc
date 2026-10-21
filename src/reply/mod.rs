@@ -82,5 +82,19 @@ messages! {
         "/unloadPlugin.success" => UnloadPluginSuccess(custom::Plugin),
         /// `/unloadPlugin.failure`: the pump refused the unload, or it failed.
         "/unloadPlugin.failure" => UnloadPluginFailure(custom::PluginFailure),
+        /// `/clock.pong`: the answer of the pump to `/clock.ping`, with the
+        /// clock of the session.
+        "/clock.pong" => ClockPong(custom::ClockPong),
+        /// `/stream.open.success`: the stream records its bus into a ring
+        /// buffer.
+        "/stream.open.success" => StreamOpenSuccess(custom::StreamOpened),
+        /// `/stream.open.failure`: the pump refused the open, or it failed.
+        "/stream.open.failure" => StreamOpenFailure(custom::StreamFailure),
+        /// `/tick`: the clock synth of a session ticked.
+        "/tick" => Tick(custom::Tick),
+        /// `/mark`: the clock synth of a session ran a mark.
+        "/mark" => Mark(custom::Mark),
+        /// `/click`: the clock synth of a session heard a click.
+        "/click" => Click(custom::Click),
     }
 }
