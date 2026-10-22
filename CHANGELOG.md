@@ -13,6 +13,9 @@
 - The clock of a session: `/clock.ping` and its `/clock.pong` of five
   numbers, and the reply of its clock synth, `/tick`, with the last click
   on its probe bus.
+- The streams of a session: `/stream.open`, `/stream.close` and the
+  answers of an open. `/stream.frames` carries the frames of a stream, as
+  a blob of little-endian `f32`.
 
 ## 0.1.2 (2026-10-19)
 

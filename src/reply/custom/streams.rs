@@ -1,4 +1,5 @@
-//! The answers of sc-app3's pump about the streams of a session.
+//! The messages of sc-app3's pump about the streams of a session: the
+//! answers of an open, and the frames that the holders of a stream get.
 
 use uuid::Uuid;
 
@@ -6,8 +7,8 @@ use crate::codec::{Payload, Reader, Writer};
 use crate::command::custom::{read_uuid, write_uuid};
 use crate::error::DecodeError;
 
-/// The arguments of `/stream.open.success`: the stream records its bus into
-/// a ring buffer of scsynth, whose `/b_setn` the pump forwards to the page.
+/// The arguments of `/stream.open.success`: the stream records its bus, and
+/// the page gets its frames in `/stream.frames`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StreamOpened {
@@ -15,10 +16,6 @@ pub struct StreamOpened {
     pub session: Uuid,
     /// The stream.
     pub stream: Uuid,
-    /// The buffer of the ring.
-    pub bufnum: i32,
-    /// The frames of the ring.
-    pub frames: i32,
     /// The channels of each frame.
     pub channels: i32,
 }
@@ -27,8 +24,6 @@ impl Payload for StreamOpened {
     fn write(&self, writer: &mut Writer) {
         write_uuid(writer, self.session);
         write_uuid(writer, self.stream);
-        writer.int(self.bufnum);
-        writer.int(self.frames);
         writer.int(self.channels);
     }
 
@@ -36,9 +31,37 @@ impl Payload for StreamOpened {
         Ok(Self {
             session: read_uuid(reader)?,
             stream: read_uuid(reader)?,
-            bufnum: reader.int()?,
-            frames: reader.int()?,
             channels: reader.int()?,
+        })
+    }
+}
+
+/// The arguments of `/stream.frames`, which each holder of a stream gets:
+/// frames that follow one another on the timeline of the session.
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct StreamFrames {
+    /// The stream.
+    pub stream: Uuid,
+    /// The frame of the timeline of the first frame.
+    pub first: f64,
+    /// The samples: little-endian `f32`, channels interleaved.
+    #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
+    pub samples: Vec<u8>,
+}
+
+impl Payload for StreamFrames {
+    fn write(&self, writer: &mut Writer) {
+        write_uuid(writer, self.stream);
+        writer.double(self.first);
+        writer.blob(self.samples.clone());
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            stream: read_uuid(reader)?,
+            first: reader.double()?,
+            samples: reader.blob()?,
         })
     }
 }
@@ -73,7 +96,7 @@ impl Payload for StreamFailure {
 
 #[cfg(test)]
 mod tests {
-    use rosc::OscType::{Int, String as Text};
+    use rosc::OscType::{Blob, Double, Int, String as Text};
 
     use super::*;
     use crate::Reply;
@@ -95,20 +118,12 @@ mod tests {
         let opened = StreamOpened {
             session: uuid(SESSION),
             stream: uuid(STREAM),
-            bufnum: 24_576,
-            frames: 65_536,
             channels: 2,
         };
         assert_wire(
             &Reply::StreamOpenSuccess(opened),
             "/stream.open.success",
-            vec![
-                text(SESSION),
-                text(STREAM),
-                Int(24_576),
-                Int(65_536),
-                Int(2),
-            ],
+            vec![text(SESSION), text(STREAM), Int(2)],
         );
         let failure = StreamFailure {
             session: uuid(SESSION),
@@ -123,6 +138,24 @@ mod tests {
                 text(STREAM),
                 text("Channels must be 1 to 8."),
             ],
+        );
+    }
+
+    #[test]
+    fn the_frames_of_a_stream_have_their_wire_form() {
+        let samples: Vec<u8> = [0.5_f32, -1.0]
+            .iter()
+            .flat_map(|v| v.to_le_bytes())
+            .collect();
+        let frames = StreamFrames {
+            stream: uuid(STREAM),
+            first: 16_777_216.0 + 1024.0,
+            samples: samples.clone(),
+        };
+        assert_wire(
+            &Reply::StreamFrames(frames),
+            "/stream.frames",
+            vec![text(STREAM), Double(16_778_240.0), Blob(samples)],
         );
     }
 }

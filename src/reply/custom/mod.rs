@@ -8,4 +8,4 @@ mod streams;
 
 pub use clock::{ClockPong, Tick};
 pub use groups::{Plugin, PluginFailure, Root, RootFailure};
-pub use streams::{StreamFailure, StreamOpened};
+pub use streams::{StreamFailure, StreamFrames, StreamOpened};
