@@ -10,9 +10,9 @@
   in the modules `command::custom` and `reply::custom`, and
   `command::custom::ADDRESSES` lists the addresses of the commands. See
   [The protocol of sc-app3's pump](README.md#the-protocol-of-sc-app3s-pump).
-- The clock of a session: `/clock.ping` and its `/clock.pong` of five
-  numbers, and the reply of its clock synth, `/tick`, with the last click
-  on its probe bus.
+- The clock of a session: `/clock.ping` and its `/clock.pong` of six
+  numbers, the latency of the session among them, and the reply of its
+  clock synth, `/tick`, with the last click on its probe bus.
 - The streams of a session: `/stream.open`, `/stream.close` and the
   answers of an open. `/stream.frames` carries the frames of a stream, as
   a blob of little-endian `f32`.

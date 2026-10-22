@@ -23,6 +23,9 @@ pub struct ClockPong {
     pub rate: f64,
     /// The beat of the pump, in milliseconds: the page pings once per beat.
     pub beat_ms: i32,
+    /// The latency of the session, in milliseconds: a page schedules each
+    /// bundle at server time now plus the latency.
+    pub latency_ms: i32,
 }
 
 impl Payload for ClockPong {
@@ -32,6 +35,7 @@ impl Payload for ClockPong {
         writer.double(self.sample);
         writer.double(self.rate);
         writer.int(self.beat_ms);
+        writer.int(self.latency_ms);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
@@ -41,6 +45,7 @@ impl Payload for ClockPong {
             sample: reader.double()?,
             rate: reader.double()?,
             beat_ms: reader.int()?,
+            latency_ms: reader.int()?,
         })
     }
 }
@@ -124,6 +129,7 @@ mod tests {
             sample: 5_000_000_000.0,
             rate: 48_000.5,
             beat_ms: 1000,
+            latency_ms: 200,
         };
         let wire = vec![
             Double(1_792_605_767_123.25),
@@ -131,6 +137,7 @@ mod tests {
             Double(5_000_000_000.0),
             Double(48_000.5),
             Int(1000),
+            Int(200),
         ];
         assert_wire(&Reply::ClockPong(pong), "/clock.pong", wire);
     }

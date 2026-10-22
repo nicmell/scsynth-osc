@@ -113,7 +113,7 @@ lists the addresses of the commands.
 | `/unloadRoot` | session | `/unloadRoot.success session`, `/unloadRoot.failure session reason` |
 | `/loadPlugin` | session, plugin | `/loadPlugin.success session plugin`, `/loadPlugin.failure session plugin reason` |
 | `/unloadPlugin` | session, plugin | `/unloadPlugin.success session plugin`, `/unloadPlugin.failure session plugin reason` |
-| `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms sample rate beat_ms` |
+| `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms sample rate beat_ms latency_ms` |
 | `/stream.open` | session, stream, bus, channels | `/stream.open.success session stream channels`, `/stream.open.failure session stream reason` |
 | `/stream.close` | session, stream | none |
 
@@ -121,9 +121,10 @@ lists the addresses of the commands.
   in lowercase with hyphens, and decoding refuses any other form.
 - `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
-  carries doubles but `beat_ms`: server time in milliseconds since the
-  Unix epoch, the sample of the timeline heard then, and the samples per
-  second, 0 before the first map.
+  carries doubles but `beat_ms` and `latency_ms`: server time in
+  milliseconds since the Unix epoch, the sample of the timeline heard
+  then, and the samples per second, 0 before the first map. Then the beat
+  of the pump and the latency of the session, in milliseconds.
 
 The clock synth of an sc-app3 session sends `/tick` with `SendReply`,
 which scsynth sends to every registered client. It reads the node, the
