@@ -7,7 +7,7 @@ use crate::error::DecodeError;
 use crate::types::NodeId;
 
 /// The arguments of `/clock.pong`: the answer of the pump to a
-/// `/clock.ping`, with the clock of the session.
+/// `/clock.ping`, with server time and the timing of the session.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClockPong {
@@ -16,37 +16,32 @@ pub struct ClockPong {
     /// Server time when the pump answered: the clock of the bridge, in
     /// milliseconds since the Unix epoch.
     pub server_ms: f64,
-    /// The sample of the timeline heard at `server_ms`.
-    pub sample: f64,
-    /// The samples of the timeline per second of server time. 0 while the
-    /// pump knows no map.
-    pub rate: f64,
     /// The beat of the pump, in milliseconds: the page pings once per beat.
     pub beat_ms: i32,
+    /// The latency of the session, in milliseconds: a page schedules each
+    /// bundle at server time now plus the latency.
+    pub latency_ms: i32,
 }
 
 impl Payload for ClockPong {
     fn write(&self, writer: &mut Writer) {
         writer.double(self.sent_ms);
         writer.double(self.server_ms);
-        writer.double(self.sample);
-        writer.double(self.rate);
         writer.int(self.beat_ms);
+        writer.int(self.latency_ms);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
             sent_ms: reader.double()?,
             server_ms: reader.double()?,
-            sample: reader.double()?,
-            rate: reader.double()?,
             beat_ms: reader.int()?,
+            latency_ms: reader.int()?,
         })
     }
 }
 
-/// The arguments of `/tick`, which the clock synth sends every few blocks,
-/// with the last click on its probe bus.
+/// The arguments of `/tick`, which the clock synth sends every few blocks.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Tick {
@@ -58,29 +53,20 @@ pub struct Tick {
     pub count: f32,
     /// The first sample of the block of the tick, modulo 2^24.
     pub phase: f32,
-    /// The sample of the last click on the probe bus, modulo 2^24, or 0
-    /// before the first click.
-    pub click_phase: f32,
-    /// The height of the last click on the probe bus, which names it, or 0
-    /// before the first click.
-    pub click_id: f32,
 }
 
 impl Payload for Tick {
     fn write(&self, writer: &mut Writer) {
-        let values = [self.count, self.phase, self.click_phase, self.click_id];
-        write_reply(writer, self.node, self.reply, values);
+        write_reply(writer, self.node, self.reply, [self.count, self.phase]);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let (node, reply, [count, phase, click_phase, click_id]) = read_reply(reader)?;
+        let (node, reply, [count, phase]) = read_reply(reader)?;
         Ok(Self {
             node,
             reply,
             count,
             phase,
-            click_phase,
-            click_id,
         })
     }
 }
@@ -117,20 +103,18 @@ mod tests {
     use crate::testing::{assert_wire, decode_error};
 
     #[test]
-    fn a_pong_carries_the_clock_of_the_session() {
+    fn a_pong_carries_server_time_and_the_timing_of_the_session() {
         let pong = ClockPong {
             sent_ms: 1_792_605_767_123.25,
             server_ms: 1_792_605_767_124.5,
-            sample: 5_000_000_000.0,
-            rate: 48_000.5,
             beat_ms: 1000,
+            latency_ms: 200,
         };
         let wire = vec![
             Double(1_792_605_767_123.25),
             Double(1_792_605_767_124.5),
-            Double(5_000_000_000.0),
-            Double(48_000.5),
             Int(1000),
+            Int(200),
         ];
         assert_wire(&Reply::ClockPong(pong), "/clock.pong", wire);
     }
@@ -142,27 +126,18 @@ mod tests {
             reply: -1,
             count: 3.0,
             phase: 2048.0,
-            click_phase: 1733.0,
-            click_id: 9.0,
         };
-        let wire = vec![
-            Int(67_174_401),
-            Int(-1),
-            Float(3.0),
-            Float(2048.0),
-            Float(1733.0),
-            Float(9.0),
-        ];
+        let wire = vec![Int(67_174_401), Int(-1), Float(3.0), Float(2048.0)];
         assert_wire(&Reply::Tick(tick), "/tick", wire);
     }
 
     #[test]
-    fn a_tick_has_four_values() {
-        let three = vec![Int(1), Int(-1), Float(1.0), Float(0.0), Float(0.0)];
+    fn a_tick_has_two_values() {
+        let one = vec![Int(1), Int(-1), Float(1.0)];
         assert_eq!(
-            decode_error::<Reply>("/tick", three),
+            decode_error::<Reply>("/tick", one),
             DecodeErrorKind::Missing {
-                index: 5,
+                index: 3,
                 expected: "a float"
             }
         );
