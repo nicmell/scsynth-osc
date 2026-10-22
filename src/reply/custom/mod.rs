@@ -2,6 +2,10 @@
 //! family. See
 //! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
 
+mod clock;
 mod groups;
+mod streams;
 
+pub use clock::{ClockPong, Tick};
 pub use groups::{Plugin, PluginFailure, Root, RootFailure};
+pub use streams::{StreamFailure, StreamFrames, StreamOpened};
