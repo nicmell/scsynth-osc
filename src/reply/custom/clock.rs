@@ -4,7 +4,6 @@
 
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
-use crate::packet::Timetag;
 use crate::types::NodeId;
 
 /// The arguments of `/clock.pong`: the answer of the pump to a
@@ -14,52 +13,34 @@ use crate::types::NodeId;
 pub struct ClockPong {
     /// The `sent_ms` of the ping, as it came.
     pub sent_ms: f64,
-    /// The time of the bridge when the pump answered.
-    pub bridge: Timetag,
+    /// Server time when the pump answered: the clock of the bridge, in
+    /// milliseconds since the Unix epoch.
+    pub server_ms: f64,
+    /// The sample of the timeline heard at `server_ms`.
+    pub sample: f64,
+    /// The samples of the timeline per second of server time. 0 while the
+    /// pump knows no map.
+    pub rate: f64,
     /// The beat of the pump, in milliseconds: the page pings once per beat.
     pub beat_ms: i32,
-    /// The OSC time of scsynth minus the time of the bridge, in
-    /// milliseconds.
-    pub delta_ms: f64,
-    /// The smallest round trip of the latest marks between the pump and
-    /// scsynth, in milliseconds.
-    pub scsynth_rtt_ms: f64,
-    /// The clock synth of the timeline: 0 before its first tick, then one
-    /// more for each new clock.
-    pub epoch: i32,
-    /// The OSC time of the sample `x0`.
-    pub t0: Timetag,
-    /// A sample of the timeline.
-    pub x0: i64,
-    /// The samples of the timeline per second of OSC time. 0 while the pump
-    /// knows no map.
-    pub rate: f64,
 }
 
 impl Payload for ClockPong {
     fn write(&self, writer: &mut Writer) {
         writer.double(self.sent_ms);
-        writer.timetag(self.bridge);
-        writer.int(self.beat_ms);
-        writer.double(self.delta_ms);
-        writer.double(self.scsynth_rtt_ms);
-        writer.int(self.epoch);
-        writer.timetag(self.t0);
-        writer.long(self.x0);
+        writer.double(self.server_ms);
+        writer.double(self.sample);
         writer.double(self.rate);
+        writer.int(self.beat_ms);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
             sent_ms: reader.double()?,
-            bridge: reader.timetag()?,
-            beat_ms: reader.int()?,
-            delta_ms: reader.double()?,
-            scsynth_rtt_ms: reader.double()?,
-            epoch: reader.int()?,
-            t0: reader.timetag()?,
-            x0: reader.long()?,
+            server_ms: reader.double()?,
+            sample: reader.double()?,
             rate: reader.double()?,
+            beat_ms: reader.int()?,
         })
     }
 }
@@ -76,21 +57,6 @@ pub struct Tick {
     pub count: f32,
     /// The first sample of the block of the tick, modulo 2^24.
     pub at: f32,
-}
-
-/// The arguments of `/mark`, which the clock synth sends in the block that
-/// runs an `/n_set` of its control `t_mark`.
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Mark {
-    /// The clock synth.
-    pub node: NodeId,
-    /// The reply id of its `SendReply`: −1.
-    pub reply: i32,
-    /// The first sample of that block, modulo 2^24.
-    pub at: f32,
-    /// The value of `t_mark`.
-    pub id: f32,
 }
 
 /// The arguments of `/click`, which the clock synth sends at the sample of a
@@ -120,22 +86,6 @@ impl Payload for Tick {
             reply,
             count,
             at,
-        })
-    }
-}
-
-impl Payload for Mark {
-    fn write(&self, writer: &mut Writer) {
-        write_reply(writer, self.node, self.reply, [self.at, self.id]);
-    }
-
-    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let (node, reply, [at, id]) = read_reply(reader)?;
-        Ok(Self {
-            node,
-            reply,
-            at,
-            id,
         })
     }
 }
@@ -180,8 +130,7 @@ fn read_reply<const N: usize>(
 
 #[cfg(test)]
 mod tests {
-    use rosc::OscTime;
-    use rosc::OscType::{Double, Float, Int, Long, Time};
+    use rosc::OscType::{Double, Float, Int};
 
     use super::*;
     use crate::Reply;
@@ -192,37 +141,17 @@ mod tests {
     fn a_pong_carries_the_clock_of_the_session() {
         let pong = ClockPong {
             sent_ms: 1_792_605_767_123.25,
-            bridge: Timetag {
-                seconds: 4_001_594_567,
-                fraction: 1 << 31,
-            },
-            beat_ms: 1000,
-            delta_ms: -0.03,
-            scsynth_rtt_ms: 0.1,
-            epoch: 1,
-            t0: Timetag {
-                seconds: 4_001_594_566,
-                fraction: 0,
-            },
-            x0: 5_000_000_000,
+            server_ms: 1_792_605_767_124.5,
+            sample: 5_000_000_000.0,
             rate: 48_000.5,
+            beat_ms: 1000,
         };
         let wire = vec![
             Double(1_792_605_767_123.25),
-            Time(OscTime {
-                seconds: 4_001_594_567,
-                fractional: 1 << 31,
-            }),
-            Int(1000),
-            Double(-0.03),
-            Double(0.1),
-            Int(1),
-            Time(OscTime {
-                seconds: 4_001_594_566,
-                fractional: 0,
-            }),
-            Long(5_000_000_000),
+            Double(1_792_605_767_124.5),
+            Double(5_000_000_000.0),
             Double(48_000.5),
+            Int(1000),
         ];
         assert_wire(&Reply::ClockPong(pong), "/clock.pong", wire);
     }
@@ -238,13 +167,6 @@ mod tests {
         };
         let wire = |a, b| vec![Int(67_174_401), Int(-1), Float(a), Float(b)];
         assert_wire(&Reply::Tick(tick), "/tick", wire(3.0, 2048.0));
-        let mark = Mark {
-            node,
-            reply: -1,
-            at: 4096.0,
-            id: 7.0,
-        };
-        assert_wire(&Reply::Mark(mark), "/mark", wire(4096.0, 7.0));
         let click = Click {
             node,
             reply: -1,

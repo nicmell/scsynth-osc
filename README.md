@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/tick` `/mark` `/click` |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/tick` `/click` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -113,7 +113,7 @@ lists the addresses of the commands.
 | `/unloadRoot` | session | `/unloadRoot.success session`, `/unloadRoot.failure session reason` |
 | `/loadPlugin` | session, plugin | `/loadPlugin.success session plugin`, `/loadPlugin.failure session plugin reason` |
 | `/unloadPlugin` | session, plugin | `/unloadPlugin.success session plugin`, `/unloadPlugin.failure session plugin reason` |
-| `/clock.ping` | a time of the page | `/clock.pong sent_ms bridge beat_ms delta_ms scsynth_rtt_ms epoch t0 x0 rate` |
+| `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms sample rate beat_ms` |
 | `/stream.open` | session, stream, bus, channels | `/stream.open.success session stream bufnum frames channels`, `/stream.open.failure session stream reason` |
 | `/stream.close` | session, stream | none |
 
@@ -121,17 +121,17 @@ lists the addresses of the commands.
   in lowercase with hyphens, and decoding refuses any other form.
 - `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
-  carries times of the bridge and of scsynth as time tags (`t`), and a
-  sample of the timeline of the session as a long (`h`).
+  carries doubles but `beat_ms`: server time in milliseconds since the
+  Unix epoch, the sample of the timeline heard then, and the samples per
+  second, 0 before the first map.
 
-The clock synth of an sc-app3 session sends three replies with
+The clock synth of an sc-app3 session sends two replies with
 `SendReply`, which scsynth sends to every registered client. Each reads
 the node, the reply id, then two floats:
 
 | Reply | Values |
 | --- | --- |
 | `/tick` | the count of ticks, and the first sample of the block of the tick, modulo 2^24 |
-| `/mark` | the first sample of the block that ran a mark, modulo 2^24, and the id of the mark |
 | `/click` | the sample of a click on the probe bus, modulo 2^24, and the id of the click |
 
 ## Strictness

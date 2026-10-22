@@ -92,8 +92,6 @@ messages! {
         "/stream.open.failure" => StreamOpenFailure(custom::StreamFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
-        /// `/mark`: the clock synth of a session ran a mark.
-        "/mark" => Mark(custom::Mark),
         /// `/click`: the clock synth of a session heard a click.
         "/click" => Click(custom::Click),
     }

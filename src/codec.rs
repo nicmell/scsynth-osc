@@ -4,7 +4,6 @@
 use rosc::OscType;
 
 use crate::error::{DecodeError, DecodeErrorKind};
-use crate::packet::Timetag;
 use crate::raw::RawArg;
 
 /// The OSC type tag of an argument.
@@ -123,20 +122,6 @@ impl<'a> Reader<'a> {
         match self.any("a blob")? {
             OscType::Blob(value) => Ok(value.clone()),
             other => Err(self.wrong(other, "a blob")),
-        }
-    }
-
-    pub(crate) fn long(&mut self) -> Result<i64, DecodeError> {
-        match self.any("a long")? {
-            OscType::Long(value) => Ok(*value),
-            other => Err(self.wrong(other, "a long")),
-        }
-    }
-
-    pub(crate) fn timetag(&mut self) -> Result<Timetag, DecodeError> {
-        match self.any("a time tag")? {
-            OscType::Time(value) => Ok(Timetag::from_osc(*value)),
-            other => Err(self.wrong(other, "a time tag")),
         }
     }
 
@@ -261,14 +246,6 @@ impl Writer {
 
     pub(crate) fn blob(&mut self, value: Vec<u8>) {
         self.args.push(RawArg::Blob(value));
-    }
-
-    pub(crate) fn long(&mut self, value: i64) {
-        self.args.push(RawArg::Long(value));
-    }
-
-    pub(crate) fn timetag(&mut self, value: Timetag) {
-        self.args.push(RawArg::Time(value));
     }
 
     pub(crate) fn flag(&mut self, value: bool) {
