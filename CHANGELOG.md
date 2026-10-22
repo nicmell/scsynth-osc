@@ -11,7 +11,8 @@
   `command::custom::ADDRESSES` lists the addresses of the commands. See
   [The protocol of sc-app3's pump](README.md#the-protocol-of-sc-app3s-pump).
 - The clock of a session: `/clock.ping` and its `/clock.pong` of five
-  numbers, and the replies of its clock synth, `/tick` and `/click`.
+  numbers, and the reply of its clock synth, `/tick`, with the last click
+  on its probe bus.
 
 ## 0.1.2 (2026-10-19)
 

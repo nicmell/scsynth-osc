@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/tick` `/click` |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -125,14 +125,11 @@ lists the addresses of the commands.
   Unix epoch, the sample of the timeline heard then, and the samples per
   second, 0 before the first map.
 
-The clock synth of an sc-app3 session sends two replies with
-`SendReply`, which scsynth sends to every registered client. Each reads
-the node, the reply id, then two floats:
-
-| Reply | Values |
-| --- | --- |
-| `/tick` | the count of ticks, and the first sample of the block of the tick, modulo 2^24 |
-| `/click` | the sample of a click on the probe bus, modulo 2^24, and the id of the click |
+The clock synth of an sc-app3 session sends `/tick` with `SendReply`,
+which scsynth sends to every registered client. It reads the node, the
+reply id, then four floats: the count of ticks, the first sample of the
+block of the tick modulo 2^24, and the sample modulo 2^24 and the id of
+the last click on the probe bus, 0 before the first.
 
 ## Strictness
 

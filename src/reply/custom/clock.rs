@@ -1,5 +1,5 @@
 //! The messages of the clock of an sc-app3 session: the pong of the pump,
-//! and the replies of the clock synth of the session, which scsynth sends
+//! and the reply of the clock synth of the session, which scsynth sends
 //! with `SendReply` to every registered client.
 
 use crate::codec::{Payload, Reader, Writer};
@@ -45,7 +45,8 @@ impl Payload for ClockPong {
     }
 }
 
-/// The arguments of `/tick`, which the clock synth sends every few blocks.
+/// The arguments of `/tick`, which the clock synth sends every few blocks,
+/// with the last click on its probe bus.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Tick {
@@ -56,52 +57,30 @@ pub struct Tick {
     /// The count of ticks since the clock started, from 1.
     pub count: f32,
     /// The first sample of the block of the tick, modulo 2^24.
-    pub at: f32,
-}
-
-/// The arguments of `/click`, which the clock synth sends at the sample of a
-/// click on its probe bus.
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Click {
-    /// The clock synth.
-    pub node: NodeId,
-    /// The reply id of its `SendReply`: −1.
-    pub reply: i32,
-    /// The sample of the click, modulo 2^24.
-    pub sample: f32,
-    /// The height of the click, which names it.
-    pub id: f32,
+    pub phase: f32,
+    /// The sample of the last click on the probe bus, modulo 2^24, or 0
+    /// before the first click.
+    pub click_phase: f32,
+    /// The height of the last click on the probe bus, which names it, or 0
+    /// before the first click.
+    pub click_id: f32,
 }
 
 impl Payload for Tick {
     fn write(&self, writer: &mut Writer) {
-        write_reply(writer, self.node, self.reply, [self.count, self.at]);
+        let values = [self.count, self.phase, self.click_phase, self.click_id];
+        write_reply(writer, self.node, self.reply, values);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let (node, reply, [count, at]) = read_reply(reader)?;
+        let (node, reply, [count, phase, click_phase, click_id]) = read_reply(reader)?;
         Ok(Self {
             node,
             reply,
             count,
-            at,
-        })
-    }
-}
-
-impl Payload for Click {
-    fn write(&self, writer: &mut Writer) {
-        write_reply(writer, self.node, self.reply, [self.sample, self.id]);
-    }
-
-    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let (node, reply, [sample, id]) = read_reply(reader)?;
-        Ok(Self {
-            node,
-            reply,
-            sample,
-            id,
+            phase,
+            click_phase,
+            click_id,
         })
     }
 }
@@ -157,31 +136,33 @@ mod tests {
     }
 
     #[test]
-    fn the_replies_of_the_clock_synth_have_their_wire_form() {
-        let node = NodeId(67_174_401);
+    fn a_tick_has_its_wire_form() {
         let tick = Tick {
-            node,
+            node: NodeId(67_174_401),
             reply: -1,
             count: 3.0,
-            at: 2048.0,
+            phase: 2048.0,
+            click_phase: 1733.0,
+            click_id: 9.0,
         };
-        let wire = |a, b| vec![Int(67_174_401), Int(-1), Float(a), Float(b)];
-        assert_wire(&Reply::Tick(tick), "/tick", wire(3.0, 2048.0));
-        let click = Click {
-            node,
-            reply: -1,
-            sample: 4133.0,
-            id: 9.0,
-        };
-        assert_wire(&Reply::Click(click), "/click", wire(4133.0, 9.0));
+        let wire = vec![
+            Int(67_174_401),
+            Int(-1),
+            Float(3.0),
+            Float(2048.0),
+            Float(1733.0),
+            Float(9.0),
+        ];
+        assert_wire(&Reply::Tick(tick), "/tick", wire);
     }
 
     #[test]
-    fn a_tick_has_two_values() {
+    fn a_tick_has_four_values() {
+        let three = vec![Int(1), Int(-1), Float(1.0), Float(0.0), Float(0.0)];
         assert_eq!(
-            decode_error::<Reply>("/tick", vec![Int(1), Int(-1), Float(1.0)]),
+            decode_error::<Reply>("/tick", three),
             DecodeErrorKind::Missing {
-                index: 3,
+                index: 5,
                 expected: "a float"
             }
         );

@@ -6,6 +6,6 @@ mod clock;
 mod groups;
 mod streams;
 
-pub use clock::{Click, ClockPong, Tick};
+pub use clock::{ClockPong, Tick};
 pub use groups::{Plugin, PluginFailure, Root, RootFailure};
 pub use streams::{StreamFailure, StreamOpened};
