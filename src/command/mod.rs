@@ -176,6 +176,11 @@ messages! {
         /// `/clock.ping`: the pump answers `/clock.pong` at once, to the page
         /// alone.
         "/clock.ping" => ClockPing(custom::ClockPing),
+        /// `/stream.open`: the pump records a bus into a ring buffer, and
+        /// sends the page the frames of each tick.
+        "/stream.open" => StreamOpen(custom::StreamOpen),
+        /// `/stream.close`: the pump releases the page's hold on the stream.
+        "/stream.close" => StreamClose(custom::Stream),
     }
 }
 

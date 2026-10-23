@@ -4,18 +4,22 @@
 
 mod clock;
 mod groups;
+mod streams;
 
 pub use clock::ClockPing;
 pub use groups::{Plugin, Root};
+pub use streams::{Stream, StreamOpen};
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 5] = [
+pub const ADDRESSES: [&str; 7] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
     "/unloadPlugin",
     "/clock.ping",
+    "/stream.open",
+    "/stream.close",
 ];
 
 use uuid::Uuid;
@@ -51,15 +55,30 @@ mod tests {
 
     #[test]
     fn the_addresses_of_the_pump_are_those_of_its_commands() {
-        let (session, plugin) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let (session, other) = (Uuid::from_u128(1), Uuid::from_u128(2));
         let root = Root { session };
-        let plugin = Plugin { session, plugin };
+        let plugin = Plugin {
+            session,
+            plugin: other,
+        };
+        let stream = Stream {
+            session,
+            stream: other,
+        };
+        let open = StreamOpen {
+            session,
+            stream: other,
+            bus: 256,
+            channels: 1,
+        };
         let commands = [
             Command::LoadRoot(root),
             Command::UnloadRoot(root),
             Command::LoadPlugin(plugin),
             Command::UnloadPlugin(plugin),
             Command::ClockPing(ClockPing { sent_ms: 0.0 }),
+            Command::StreamOpen(open),
+            Command::StreamClose(stream),
         ];
         assert_eq!(commands.map(|command| command.address()), ADDRESSES);
     }

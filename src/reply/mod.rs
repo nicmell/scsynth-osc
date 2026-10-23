@@ -85,5 +85,14 @@ messages! {
         /// `/clock.pong`: the answer of the pump to `/clock.ping`, with the
         /// clock of the session.
         "/clock.pong" => ClockPong(custom::ClockPong),
+        /// `/stream.open.success`: the stream records its bus, and the page
+        /// gets its frames.
+        "/stream.open.success" => StreamOpenSuccess(custom::StreamOpened),
+        /// `/stream.open.failure`: the pump refused the open, or it failed.
+        "/stream.open.failure" => StreamOpenFailure(custom::StreamFailure),
+        /// `/stream.frames`: frames of a stream, for each of its holders.
+        "/stream.frames" => StreamFrames(custom::StreamFrames),
+        /// `/tick`: the clock synth of a session ticked.
+        "/tick" => Tick(custom::Tick),
     }
 }

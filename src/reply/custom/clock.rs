@@ -1,8 +1,10 @@
-//! The message of the clock of an sc-app3 session: the pong of the pump to
-//! the ping of a page.
+//! The messages of the clock of an sc-app3 session: the pong of the pump,
+//! and the reply of the clock synth of the session, which scsynth sends
+//! with `SendReply` to every registered client.
 
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
+use crate::types::NodeId;
 
 /// The arguments of `/clock.pong`: the answer of the pump to a
 /// `/clock.ping`, with server time and the timing of the session.
@@ -39,13 +41,66 @@ impl Payload for ClockPong {
     }
 }
 
+/// The arguments of `/tick`, which the clock synth sends every few blocks.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Tick {
+    /// The clock synth.
+    pub node: NodeId,
+    /// The reply id of its `SendReply`: −1.
+    pub reply: i32,
+    /// The count of ticks since the clock started, from 1.
+    pub count: f32,
+    /// The first sample of the block of the tick, modulo 2^24.
+    pub phase: f32,
+}
+
+impl Payload for Tick {
+    fn write(&self, writer: &mut Writer) {
+        write_reply(writer, self.node, self.reply, [self.count, self.phase]);
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        let (node, reply, [count, phase]) = read_reply(reader)?;
+        Ok(Self {
+            node,
+            reply,
+            count,
+            phase,
+        })
+    }
+}
+
+/// The arguments of a reply of `SendReply`: the node, the reply id, then
+/// the values.
+fn write_reply<const N: usize>(writer: &mut Writer, node: NodeId, reply: i32, values: [f32; N]) {
+    node.write(writer);
+    writer.int(reply);
+    for value in values {
+        writer.float(value);
+    }
+}
+
+fn read_reply<const N: usize>(
+    reader: &mut Reader<'_>,
+) -> Result<(NodeId, i32, [f32; N]), DecodeError> {
+    let node = NodeId::read(reader)?;
+    let reply = reader.int()?;
+    let mut values = [0.0; N];
+    for value in &mut values {
+        *value = reader.float()?;
+    }
+    Ok((node, reply, values))
+}
+
 #[cfg(test)]
 mod tests {
-    use rosc::OscType::{Double, Int};
+    use rosc::OscType::{Double, Float, Int};
 
     use super::*;
     use crate::Reply;
-    use crate::testing::assert_wire;
+    use crate::error::DecodeErrorKind;
+    use crate::testing::{assert_wire, decode_error};
 
     #[test]
     fn a_pong_carries_server_time_and_the_timing_of_the_session() {
@@ -62,5 +117,29 @@ mod tests {
             Int(200),
         ];
         assert_wire(&Reply::ClockPong(pong), "/clock.pong", wire);
+    }
+
+    #[test]
+    fn a_tick_has_its_wire_form() {
+        let tick = Tick {
+            node: NodeId(67_174_401),
+            reply: -1,
+            count: 3.0,
+            phase: 2048.0,
+        };
+        let wire = vec![Int(67_174_401), Int(-1), Float(3.0), Float(2048.0)];
+        assert_wire(&Reply::Tick(tick), "/tick", wire);
+    }
+
+    #[test]
+    fn a_tick_has_two_values() {
+        let one = vec![Int(1), Int(-1), Float(1.0)];
+        assert_eq!(
+            decode_error::<Reply>("/tick", one),
+            DecodeErrorKind::Missing {
+                index: 3,
+                expected: "a float"
+            }
+        );
     }
 }
