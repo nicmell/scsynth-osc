@@ -10,7 +10,7 @@ use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
-use scsynth_osc::reply::custom::PluginFailure;
+use scsynth_osc::reply::custom::{PluginFailure, StreamFrames};
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
@@ -643,6 +643,22 @@ fn a_message_of_the_pump_names_its_uuids() {
         &Reply::LoadPluginFailure(failure),
         json!({"address": "/loadPlugin.failure", "args": {
             "session": session, "plugin": plugin, "reason": "The root group is not ready."
+        }}),
+    );
+}
+
+#[test]
+fn the_frames_of_a_stream_are_their_bytes() {
+    let stream = "7d1e0c4a-2b3f-4a5e-9c8d-6f7a8b9c0d1e";
+    let frames = StreamFrames {
+        stream: stream.parse().expect("a uuid"),
+        first: 1024.0,
+        samples: vec![0, 0, 128, 63],
+    };
+    round_trip(
+        &Reply::StreamFrames(frames),
+        json!({"address": "/stream.frames", "args": {
+            "stream": stream, "first": 1024.0, "samples": [0, 0, 128, 63]
         }}),
     );
 }

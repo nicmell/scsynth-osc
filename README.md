@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -114,6 +114,8 @@ lists the addresses of the commands.
 | `/loadPlugin` | session, plugin | `/loadPlugin.success session plugin`, `/loadPlugin.failure session plugin reason` |
 | `/unloadPlugin` | session, plugin | `/unloadPlugin.success session plugin`, `/unloadPlugin.failure session plugin reason` |
 | `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms beat_ms latency_ms` |
+| `/stream.open` | session, stream, bus, channels | `/stream.open.success session stream channels`, `/stream.open.failure session stream reason` |
+| `/stream.close` | session, stream | none |
 
 - A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
@@ -122,6 +124,15 @@ lists the addresses of the commands.
   echoes it, then carries server time as a double, in milliseconds since
   the Unix epoch. Then come the beat of the pump and the latency of the
   session, as ints of milliseconds.
+
+The clock synth of an sc-app3 session sends `/tick` with `SendReply`,
+which scsynth sends to every registered client. It reads the node, the
+reply id, then two floats: the count of ticks, and the first sample of the
+block of the tick modulo 2^24.
+
+Each holder of a stream gets `/stream.frames`. It reads the stream, then
+the frame of the timeline of its first frame as a double. Its samples
+follow as a blob of little-endian `f32`, channels interleaved.
 
 ## Strictness
 
