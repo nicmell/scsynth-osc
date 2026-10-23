@@ -173,6 +173,9 @@ messages! {
         /// `/unloadPlugin`: the pump releases the page's hold on the group of
         /// the plugin.
         "/unloadPlugin" => UnloadPlugin(custom::Plugin),
+        /// `/clock.ping`: the pump answers `/clock.pong` at once, to the page
+        /// alone.
+        "/clock.ping" => ClockPing(custom::ClockPing),
     }
 }
 

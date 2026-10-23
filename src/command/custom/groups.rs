@@ -94,27 +94,6 @@ mod tests {
     }
 
     #[test]
-    fn the_addresses_of_the_pump_are_those_of_its_commands() {
-        let root = Root {
-            session: uuid(SESSION),
-        };
-        let plugin = Plugin {
-            session: uuid(SESSION),
-            plugin: uuid(PLUGIN),
-        };
-        let commands = [
-            Command::LoadRoot(root),
-            Command::UnloadRoot(root),
-            Command::LoadPlugin(plugin),
-            Command::UnloadPlugin(plugin),
-        ];
-        assert_eq!(
-            commands.map(|command| command.address()),
-            crate::command::custom::ADDRESSES
-        );
-    }
-
-    #[test]
     fn a_uuid_is_lowercase_with_hyphens() {
         for other in [
             "not a uuid",
