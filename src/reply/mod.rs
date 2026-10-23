@@ -82,5 +82,8 @@ messages! {
         "/unloadPlugin.success" => UnloadPluginSuccess(custom::Plugin),
         /// `/unloadPlugin.failure`: the pump refused the unload, or it failed.
         "/unloadPlugin.failure" => UnloadPluginFailure(custom::PluginFailure),
+        /// `/clock.pong`: the answer of the pump to `/clock.ping`, with the
+        /// clock of the session.
+        "/clock.pong" => ClockPong(custom::ClockPong),
     }
 }
