@@ -20,57 +20,37 @@ pub struct RawMessage {
 
 /// An argument of a [`RawMessage`], with its OSC type.
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type", content = "data")
-)]
 #[non_exhaustive]
 pub enum RawArg {
     /// A 32-bit integer, `i`.
-    #[cfg_attr(feature = "serde", serde(rename = "i"))]
     Int(i32),
     /// A 32-bit float, `f`.
-    #[cfg_attr(feature = "serde", serde(rename = "f"))]
     Float(f32),
     /// A 64-bit float, `d`.
-    #[cfg_attr(feature = "serde", serde(rename = "d"))]
     Double(f64),
     /// A string, `s`.
-    #[cfg_attr(feature = "serde", serde(rename = "s"))]
     String(String),
     /// A blob, `b`.
-    #[cfg_attr(feature = "serde", serde(rename = "b"))]
-    Blob(#[cfg_attr(feature = "serde", serde(with = "serde_bytes"))] Vec<u8>),
+    Blob(Vec<u8>),
     /// An array of arguments, between `[` and `]`.
-    #[cfg_attr(feature = "serde", serde(rename = "["))]
     Array(Vec<RawArg>),
     /// A 64-bit integer, `h`.
-    #[cfg_attr(feature = "serde", serde(rename = "h"))]
     Long(i64),
     /// A time tag, `t`.
-    #[cfg_attr(feature = "serde", serde(rename = "t"))]
     Time(Timetag),
     /// A character, `c`.
-    #[cfg_attr(feature = "serde", serde(rename = "c"))]
     Char(char),
     /// A color, `r`.
-    #[cfg_attr(feature = "serde", serde(rename = "r"))]
     Color(Color),
     /// A MIDI message, `m`.
-    #[cfg_attr(feature = "serde", serde(rename = "m"))]
     Midi(MidiMessage),
     /// True, `T`, which has no data.
-    #[cfg_attr(feature = "serde", serde(rename = "T"))]
     True,
     /// False, `F`, which has no data.
-    #[cfg_attr(feature = "serde", serde(rename = "F"))]
     False,
     /// Nil, `N`, which has no data.
-    #[cfg_attr(feature = "serde", serde(rename = "N"))]
     Nil,
     /// Infinitum, `I`, which has no data.
-    #[cfg_attr(feature = "serde", serde(rename = "I"))]
     Inf,
 }
 
@@ -219,6 +199,90 @@ fn raw_arg(value: &OscType) -> RawArg {
         OscType::Array(array) => RawArg::Array(array.content.iter().map(raw_arg).collect()),
         OscType::Nil => RawArg::Nil,
         OscType::Inf => RawArg::Inf,
+    }
+}
+
+/// The serde form of a [`RawArg`]: `{"type", "data"}`, with the OSC tag as
+/// the type, and an array as the sequence of its arguments.
+#[cfg(feature = "serde")]
+mod serde_form {
+    use std::fmt;
+
+    use serde::de::value::{MapAccessDeserializer, SeqAccessDeserializer};
+    use serde::de::{MapAccess, SeqAccess, Visitor};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::{Color, MidiMessage, RawArg, Timetag};
+
+    /// Every argument but an array, as `{"type", "data"}`.
+    #[derive(Serialize, Deserialize)]
+    #[serde(remote = "RawArg", tag = "type", content = "data")]
+    enum Tagged {
+        #[serde(rename = "i")]
+        Int(i32),
+        #[serde(rename = "f")]
+        Float(f32),
+        #[serde(rename = "d")]
+        Double(f64),
+        #[serde(rename = "s")]
+        String(String),
+        #[serde(rename = "b")]
+        Blob(#[serde(with = "serde_bytes")] Vec<u8>),
+        #[serde(skip)]
+        Array(Vec<RawArg>),
+        #[serde(rename = "h")]
+        Long(i64),
+        #[serde(rename = "t")]
+        Time(Timetag),
+        #[serde(rename = "c")]
+        Char(char),
+        #[serde(rename = "r")]
+        Color(Color),
+        #[serde(rename = "m")]
+        Midi(MidiMessage),
+        #[serde(rename = "T")]
+        True,
+        #[serde(rename = "F")]
+        False,
+        #[serde(rename = "N")]
+        Nil,
+        #[serde(rename = "I")]
+        Inf,
+    }
+
+    impl Serialize for RawArg {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            match self {
+                Self::Array(args) => args.serialize(serializer),
+                arg => Tagged::serialize(arg, serializer),
+            }
+        }
+    }
+
+    impl<'de> Deserialize<'de> for RawArg {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            deserializer.deserialize_any(ArgVisitor)
+        }
+    }
+
+    /// A map as a tagged argument, and a sequence as an array.
+    struct ArgVisitor;
+
+    impl<'de> Visitor<'de> for ArgVisitor {
+        type Value = RawArg;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter
+                .write_str("an OSC argument: its type and its data, or a sequence of arguments")
+        }
+
+        fn visit_seq<A: SeqAccess<'de>>(self, seq: A) -> Result<RawArg, A::Error> {
+            Vec::deserialize(SeqAccessDeserializer::new(seq)).map(RawArg::Array)
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<RawArg, A::Error> {
+            Tagged::deserialize(MapAccessDeserializer::new(map))
+        }
     }
 }
 

@@ -24,7 +24,7 @@ type RawArg =
   | { type: 'r'; data: { red: number; green: number; blue: number; alpha: number } }
   | { type: 'm'; data: { port: number; status: number; data1: number; data2: number } }
   | { type: 'T' | 'F' | 'N' | 'I' }
-  | { type: '['; data: RawArg[] }
+  | RawArg[]
 
 type Pane = 'typed' | 'raw' | 'bytes'
 

@@ -558,6 +558,35 @@ fn serde_json_refuses_bundles_42_deep_and_trees_and_completions_43_deep() {
 }
 
 #[test]
+fn a_raw_array_is_the_sequence_of_its_args() {
+    let raw = RawMessage {
+        address: "/demo".to_owned(),
+        args: vec![
+            RawArg::Array(vec![]),
+            RawArg::Array(vec![RawArg::Array(vec![RawArg::Int(1)]), RawArg::True]),
+        ],
+    };
+    round_trip(
+        &raw,
+        json!({"address": "/demo", "args": [[], [[{"type": "i", "data": 1}], {"type": "T"}]]}),
+    );
+    let data_first = json!({"address": "/sync", "args": [{"data": 7, "type": "i"}]});
+    let read: RawMessage = serde_json::from_value(data_first).expect("deserializes");
+    assert_eq!(read.args, [RawArg::Int(7)]);
+    for args in [
+        json!([{"type": "[", "data": [{"type": "i", "data": 1}]}]),
+        json!([["i", 7]]),
+        json!([[1, 2]]),
+    ] {
+        let raw = json!({"address": "/sync", "args": args});
+        assert!(
+            serde_json::from_value::<RawMessage>(raw.clone()).is_err(),
+            "{raw}"
+        );
+    }
+}
+
+#[test]
 fn a_raw_message_is_its_address_and_its_typed_args() {
     let raw = RawMessage {
         address: "/demo".to_owned(),
@@ -600,7 +629,7 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
             {"type": "d", "data": 0.25},
             {"type": "s", "data": "default"},
             {"type": "b", "data": [1, 2]},
-            {"type": "[", "data": [{"type": "f", "data": 1.0}, {"type": "s", "data": "c3"}]},
+            [{"type": "f", "data": 1.0}, {"type": "s", "data": "c3"}],
             {"type": "h", "data": -2},
             {"type": "t", "data": {"seconds": 1, "fraction": 2}},
             {"type": "c", "data": "x"},

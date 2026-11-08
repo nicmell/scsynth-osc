@@ -353,8 +353,9 @@ remove it.
   reply is then an object with its `address` and its `args`, such as
   `{"address": "/sync", "args": 7}`.
   - The values that take more than one type, such as `Control` and
-    `Number`, are untagged enums. They deserialize only from a format that
-    describes its own types, such as JSON.
+    `Number`, are untagged enums, and a `RawArg` is a map or a sequence.
+    They deserialize only from a format that describes its own types, such
+    as JSON.
   - `serde_json` writes a NaN or an infinite float as `null`, and does not
     read it back.
   - `serde_json` reads at most 128 levels of nesting. Bundles nested 42
@@ -363,8 +364,10 @@ remove it.
   - A `RawMessage` is an object with its `address` and its `args`, each
     with its `type` and its `data`, such as
     `{"address": "/sync", "args": [{"type": "i", "data": 7}]}`. The type
-    is the OSC tag of the argument, and `[` for an array. `T`, `F`, `N`
-    and `I` have no `data`. A blob serializes as bytes: an array of
+    is the OSC tag of the argument. `T`, `F`, `N` and `I` have no `data`.
+    An array is the sequence of its arguments, such as
+    `[{"type": "f", "data": 440.0}, {"type": "s", "data": "c3"}]`, and a
+    sequence is always an array. A blob serializes as bytes: an array of
     numbers in JSON, and a `Uint8Array` through serde-wasm-bindgen. A
     time tag is `{"seconds", "fraction"}`, a color is `{"red", "green",
     "blue", "alpha"}`, and a MIDI message is `{"port", "status", "data1",
