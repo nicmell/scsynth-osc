@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 (2026-11-08)
+
+### Changed
+
+- With the feature `serde`, `RawArg::Array` is the sequence of its
+  arguments, such as `[{"type": "i", "data": 1}]`, in the place of
+  `{"type": "[", "data": […]}`, which no longer deserializes. A sequence
+  is always an array, so the pair `["i", 1]` no longer reads as an int.
+- A `RawArg` deserializes only from a format that describes its own
+  types, such as JSON.
+
 ## 0.1.2 (2026-10-19)
 
 ### Added
