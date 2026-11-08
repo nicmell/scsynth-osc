@@ -5,14 +5,18 @@
 mod clock;
 mod groups;
 mod streams;
+mod synthdefs;
 
 pub use clock::ClockPing;
 pub use groups::{Plugin, Root};
 pub use streams::{Stream, StreamOpen};
+pub use synthdefs::{LoadSynthdef, Synthdef};
+
+pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 7] = [
+pub const ADDRESSES: [&str; 9] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
@@ -20,6 +24,8 @@ pub const ADDRESSES: [&str; 7] = [
     "/clock.ping",
     "/stream.open",
     "/stream.close",
+    "/loadSynthdef",
+    "/unloadSynthdef",
 ];
 
 use uuid::Uuid;
@@ -71,6 +77,17 @@ mod tests {
             bus: 256,
             channels: 1,
         };
+        let synthdef = Synthdef {
+            session,
+            plugin: other,
+            name: "a1b2/sine".to_owned(),
+        };
+        let load = LoadSynthdef {
+            session,
+            plugin: other,
+            name: synthdef.name.clone(),
+            data: vec![1],
+        };
         let commands = [
             Command::LoadRoot(root),
             Command::UnloadRoot(root),
@@ -79,6 +96,8 @@ mod tests {
             Command::ClockPing(ClockPing { sent_ms: 0.0 }),
             Command::StreamOpen(open),
             Command::StreamClose(stream),
+            Command::LoadSynthdef(load),
+            Command::UnloadSynthdef(synthdef),
         ];
         assert_eq!(commands.map(|command| command.address()), ADDRESSES);
     }

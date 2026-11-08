@@ -181,6 +181,12 @@ messages! {
         "/stream.open" => StreamOpen(custom::StreamOpen),
         /// `/stream.close`: the pump releases the page's hold on the stream.
         "/stream.close" => StreamClose(custom::Stream),
+        /// `/loadSynthdef`: the pump loads a synth definition into scsynth
+        /// for the plugin, and answers the page alone.
+        "/loadSynthdef" => LoadSynthdef(custom::LoadSynthdef),
+        /// `/unloadSynthdef`: the pump frees a synth definition of the
+        /// plugin, and answers the page alone.
+        "/unloadSynthdef" => UnloadSynthdef(custom::Synthdef),
     }
 }
 

@@ -16,6 +16,10 @@
 - The streams of a session: `/stream.open`, `/stream.close` and the
   answers of an open. `/stream.frames` carries the frames of a stream, as
   a blob of little-endian `f32`.
+- The synth definitions of a page: `/loadSynthdef` with the bytes of a
+  synth definition file, `/unloadSynthdef`, and the `.success` and
+  `.failure` answers of both, which name the definition. A name takes 1 to
+  255 bytes, and the bytes cannot be empty.
 
 ## 0.2.0 (2026-11-08)
 

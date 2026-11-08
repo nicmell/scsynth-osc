@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/tick` |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -116,9 +116,17 @@ lists the addresses of the commands.
 | `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms beat_ms latency_ms` |
 | `/stream.open` | session, stream, bus, channels | `/stream.open.success session stream channels`, `/stream.open.failure session stream reason` |
 | `/stream.close` | session, stream | none |
+| `/loadSynthdef` | session, plugin, name, data | `/loadSynthdef.success session plugin name`, `/loadSynthdef.failure session plugin name reason` |
+| `/unloadSynthdef` | session, plugin, name | `/unloadSynthdef.success session plugin name`, `/unloadSynthdef.failure session plugin name reason` |
 
 - A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
+- The name of a synth definition takes 1 to 255 bytes, and decoding
+  refuses any other length. A synth definition file gives the length of a
+  name in one byte, and scsynth refuses 256 or more
+  (`SC_GraphDef.cpp:75-81`).
+- `/loadSynthdef` carries the bytes of a synth definition file as a blob,
+  which cannot be empty, as in `/d_recv`. The crate does not read the file.
 - `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
   echoes it, then carries server time as a double, in milliseconds since
@@ -199,6 +207,9 @@ The bytes of a value decode back to the value, except for these values:
 
 - A string with a NUL byte. The crate writes it up to that byte.
 - A `DRecv` without bytes. Decoding refuses its empty blob.
+- A message of a synth definition of the pump with a name that is empty
+  or longer than 255 bytes, or a `LoadSynthdef` without bytes. Decoding
+  refuses them.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
   variant. Its bytes decode as that variant, or do not decode.
 - A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and
