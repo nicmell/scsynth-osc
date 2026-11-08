@@ -92,6 +92,14 @@ messages! {
         "/stream.open.failure" => StreamOpenFailure(custom::StreamFailure),
         /// `/stream.frames`: frames of a stream, for each of its holders.
         "/stream.frames" => StreamFrames(custom::StreamFrames),
+        /// `/loadSynthdef.success`: the synth definition is in scsynth.
+        "/loadSynthdef.success" => LoadSynthdefSuccess(custom::Synthdef),
+        /// `/loadSynthdef.failure`: the pump refused the load, or it failed.
+        "/loadSynthdef.failure" => LoadSynthdefFailure(custom::SynthdefFailure),
+        /// `/unloadSynthdef.success`: the synth definition is free.
+        "/unloadSynthdef.success" => UnloadSynthdefSuccess(custom::Synthdef),
+        /// `/unloadSynthdef.failure`: the pump refused the free, or it failed.
+        "/unloadSynthdef.failure" => UnloadSynthdefFailure(custom::SynthdefFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
     }

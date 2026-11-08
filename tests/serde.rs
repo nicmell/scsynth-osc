@@ -4,13 +4,13 @@
 use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleFormat};
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
-use scsynth_osc::command::custom::{Plugin, Root};
+use scsynth_osc::command::custom::{LoadSynthdef, Plugin, Root};
 use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
-use scsynth_osc::reply::custom::{PluginFailure, StreamFrames};
+use scsynth_osc::reply::custom::{PluginFailure, StreamFrames, SynthdefFailure};
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
@@ -688,6 +688,37 @@ fn the_frames_of_a_stream_are_their_bytes() {
         &Reply::StreamFrames(frames),
         json!({"address": "/stream.frames", "args": {
             "stream": stream, "first": 1024.0, "samples": [0, 0, 128, 63]
+        }}),
+    );
+}
+
+#[test]
+fn a_synthdef_of_the_pump_is_its_name_and_its_bytes() {
+    let session = "5049297f-342b-4b8b-8c62-54edbb5d3335";
+    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
+    let uuid = |text: &str| text.parse().expect("a uuid");
+    round_trip(
+        &Command::LoadSynthdef(LoadSynthdef {
+            session: uuid(session),
+            plugin: uuid(plugin),
+            name: "a1b2/sine".to_owned(),
+            data: vec![83, 67, 103, 102],
+        }),
+        json!({"address": "/loadSynthdef", "args": {
+            "session": session, "plugin": plugin, "name": "a1b2/sine", "data": [83, 67, 103, 102]
+        }}),
+    );
+    let failure = SynthdefFailure {
+        session: uuid(session),
+        plugin: uuid(plugin),
+        name: "a1b2/sine".to_owned(),
+        reason: "The definition is too large to send to scsynth.".to_owned(),
+    };
+    round_trip(
+        &Reply::LoadSynthdefFailure(failure),
+        json!({"address": "/loadSynthdef.failure", "args": {
+            "session": session, "plugin": plugin, "name": "a1b2/sine",
+            "reason": "The definition is too large to send to scsynth."
         }}),
     );
 }
