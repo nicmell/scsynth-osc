@@ -20,6 +20,10 @@
   synth definition file, `/unloadSynthdef`, and the `.success` and
   `.failure` answers of both, which name the definition. A name takes 1 to
   255 bytes, and the bytes cannot be empty.
+- The nodes of the elements of a plugin: `/loadGroup` and `/loadSynth`,
+  with the id of the element and the id of its parent, and for a synth its
+  definition and its controls. Their `.success` carries the node, and
+  their `.failure` a reason. An id cannot be empty.
 
 ## 0.2.0 (2026-11-08)
 

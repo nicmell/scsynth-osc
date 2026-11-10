@@ -100,6 +100,14 @@ messages! {
         "/unloadSynthdef.success" => UnloadSynthdefSuccess(custom::Synthdef),
         /// `/unloadSynthdef.failure`: the pump refused the free, or it failed.
         "/unloadSynthdef.failure" => UnloadSynthdefFailure(custom::SynthdefFailure),
+        /// `/loadGroup.success`: the group of the element is in scsynth.
+        "/loadGroup.success" => LoadGroupSuccess(custom::NodeLoaded),
+        /// `/loadGroup.failure`: the pump refused the load, or it failed.
+        "/loadGroup.failure" => LoadGroupFailure(custom::NodeFailure),
+        /// `/loadSynth.success`: the synth of the element is in scsynth.
+        "/loadSynth.success" => LoadSynthSuccess(custom::NodeLoaded),
+        /// `/loadSynth.failure`: the pump refused the load, or it failed.
+        "/loadSynth.failure" => LoadSynthFailure(custom::NodeFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
     }

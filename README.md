@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/tick` |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` `/loadGroup` `/loadSynth` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/loadGroup.success` `/loadGroup.failure` `/loadSynth.success` `/loadSynth.failure` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -118,6 +118,8 @@ lists the addresses of the commands.
 | `/stream.close` | session, stream | none |
 | `/loadSynthdef` | session, plugin, name, data | `/loadSynthdef.success session plugin name`, `/loadSynthdef.failure session plugin name reason` |
 | `/unloadSynthdef` | session, plugin, name | `/unloadSynthdef.success session plugin name`, `/unloadSynthdef.failure session plugin name reason` |
+| `/loadGroup` | session, plugin, id, parent | `/loadGroup.success session plugin id node`, `/loadGroup.failure session plugin id reason` |
+| `/loadSynth` | session, plugin, id, parent, def, controls | `/loadSynth.success session plugin id node`, `/loadSynth.failure session plugin id reason` |
 
 - A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
@@ -127,6 +129,12 @@ lists the addresses of the commands.
   (`SC_GraphDef.cpp:75-81`).
 - `/loadSynthdef` carries the bytes of a synth definition file as a blob,
   which cannot be empty, as in `/d_recv`. The crate does not read the file.
+- The id of an element of a plugin is a string that cannot be empty, and
+  decoding refuses an empty one. `parent` is the id of the element of the
+  group that holds the node, or the empty string for the group of the
+  plugin. `def` is the name of a synth definition.
+- The controls of `/loadSynth` follow the rules of [Controls](#controls),
+  as in `/s_new`.
 - `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
   echoes it, then carries server time as a double, in milliseconds since
@@ -210,6 +218,9 @@ The bytes of a value decode back to the value, except for these values:
 - A message of a synth definition of the pump with a name that is empty
   or longer than 255 bytes, or a `LoadSynthdef` without bytes. Decoding
   refuses them.
+- A message of a node of the pump with an empty id, or a `LoadSynth`
+  whose definition has an empty name or one longer than 255 bytes.
+  Decoding refuses them.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
   variant. Its bytes decode as that variant, or do not decode.
 - A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and

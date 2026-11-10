@@ -187,6 +187,12 @@ messages! {
         /// `/unloadSynthdef`: the pump frees a synth definition of the
         /// plugin, and answers the page alone.
         "/unloadSynthdef" => UnloadSynthdef(custom::Synthdef),
+        /// `/loadGroup`: the pump makes the group of an element of the
+        /// plugin, and answers every page with its node.
+        "/loadGroup" => LoadGroup(custom::LoadGroup),
+        /// `/loadSynth`: the pump makes the synth of an element of the
+        /// plugin, and answers every page with its node.
+        "/loadSynth" => LoadSynth(custom::LoadSynth),
     }
 }
 
