@@ -24,6 +24,8 @@
   with the id of the element and the id of its parent, and for a synth its
   definition and its controls. Their `.success` carries the node, and
   their `.failure` a reason. An id cannot be empty.
+- The unloads of those nodes: `/unloadGroup` and `/unloadSynth`, with the
+  id of the element, and the `.success` and `.failure` answers of both.
 
 ## 0.2.0 (2026-11-08)
 
