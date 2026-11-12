@@ -1,6 +1,6 @@
 //! The commands of sc-app3's pump about the nodes of the elements of a
 //! plugin: a group or a synth that the pump makes in scsynth, in the group
-//! of the plugin or in the group of a parent element.
+//! of the plugin or in the group of a parent element, and frees.
 
 use uuid::Uuid;
 
@@ -86,6 +86,35 @@ impl Payload for LoadSynth {
     }
 }
 
+/// The arguments of `/unloadGroup` and `/unloadSynth`, and of the
+/// `.success` of both commands: the node of an element of a plugin.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Node {
+    /// The session.
+    pub session: Uuid,
+    /// The plugin.
+    pub plugin: Uuid,
+    /// The id of the element. It cannot be empty.
+    pub id: String,
+}
+
+impl Payload for Node {
+    fn write(&self, writer: &mut Writer) {
+        write_uuid(writer, self.session);
+        write_uuid(writer, self.plugin);
+        writer.string(&self.id);
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            session: read_uuid(reader)?,
+            plugin: read_uuid(reader)?,
+            id: read_id(reader)?,
+        })
+    }
+}
+
 /// The id of an element, which cannot be empty.
 pub(crate) fn read_id(reader: &mut Reader<'_>) -> Result<String, DecodeError> {
     let index = reader.index();
@@ -155,6 +184,18 @@ mod tests {
                 Int(1),
             ],
         );
+        let node = Node {
+            session: uuid(SESSION),
+            plugin: uuid(PLUGIN),
+            id: "39fc2565fa0c9".to_owned(),
+        };
+        let wire = vec![text(SESSION), text(PLUGIN), text("39fc2565fa0c9")];
+        assert_wire(
+            &Command::UnloadGroup(node.clone()),
+            "/unloadGroup",
+            wire.clone(),
+        );
+        assert_wire(&Command::UnloadSynth(node), "/unloadSynth", wire);
     }
 
     #[test]
@@ -165,6 +206,14 @@ mod tests {
             matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
             "{kind:?}"
         );
+        for address in ["/unloadGroup", "/unloadSynth"] {
+            let kind =
+                decode_error::<Command>(address, vec![text(SESSION), text(PLUGIN), text("")]);
+            assert!(
+                matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+                "{address}: {kind:?}"
+            );
+        }
         assert_eq!(
             decode::<Command>("/loadGroup", group("a")),
             Command::LoadGroup(LoadGroup {

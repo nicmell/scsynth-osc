@@ -182,10 +182,10 @@ messages! {
         /// `/stream.close`: the pump releases the page's hold on the stream.
         "/stream.close" => StreamClose(custom::Stream),
         /// `/loadSynthdef`: the pump loads a synth definition into scsynth
-        /// for the plugin, and answers the page alone.
+        /// for the plugin, and answers every page.
         "/loadSynthdef" => LoadSynthdef(custom::LoadSynthdef),
-        /// `/unloadSynthdef`: the pump frees a synth definition of the
-        /// plugin, and answers the page alone.
+        /// `/unloadSynthdef`: the pump releases the page's hold on a synth
+        /// definition of the plugin, and frees it once nobody holds it.
         "/unloadSynthdef" => UnloadSynthdef(custom::Synthdef),
         /// `/loadGroup`: the pump makes the group of an element of the
         /// plugin, and answers every page with its node.
@@ -193,6 +193,12 @@ messages! {
         /// `/loadSynth`: the pump makes the synth of an element of the
         /// plugin, and answers every page with its node.
         "/loadSynth" => LoadSynth(custom::LoadSynth),
+        /// `/unloadGroup`: the pump releases the page's hold on the group of
+        /// an element of the plugin, and frees it once nobody holds it.
+        "/unloadGroup" => UnloadGroup(custom::Node),
+        /// `/unloadSynth`: the pump releases the page's hold on the synth of
+        /// an element of the plugin, and frees it once nobody holds it.
+        "/unloadSynth" => UnloadSynth(custom::Node),
     }
 }
 

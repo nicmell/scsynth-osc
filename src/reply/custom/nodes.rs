@@ -1,5 +1,6 @@
 //! The answers of sc-app3's pump about the nodes of the elements of a
-//! plugin: the outcome of each load, with the node of a success.
+//! plugin: the outcome of each load, with the node of a success, and of
+//! each unload.
 
 use uuid::Uuid;
 
@@ -41,7 +42,12 @@ impl Payload for NodeLoaded {
     }
 }
 
-/// The arguments of `/loadGroup.failure` and `/loadSynth.failure`.
+/// The arguments of `/unloadGroup.success` and `/unloadSynth.success`: see
+/// [`crate::command::custom::Node`].
+pub type Node = crate::command::custom::Node;
+
+/// The arguments of `/loadGroup.failure`, `/loadSynth.failure`,
+/// `/unloadGroup.failure` and `/unloadSynth.failure`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeFailure {
@@ -51,7 +57,7 @@ pub struct NodeFailure {
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
     pub id: String,
-    /// Why the load failed.
+    /// Why the load or the unload failed.
     pub reason: String,
 }
 
@@ -131,8 +137,34 @@ mod tests {
             wire.clone(),
         );
         assert_wire(
-            &Reply::LoadSynthFailure(failure),
+            &Reply::LoadSynthFailure(failure.clone()),
             "/loadSynth.failure",
+            wire.clone(),
+        );
+        assert_wire(
+            &Reply::UnloadGroupFailure(failure.clone()),
+            "/unloadGroup.failure",
+            wire.clone(),
+        );
+        assert_wire(
+            &Reply::UnloadSynthFailure(failure),
+            "/unloadSynth.failure",
+            wire,
+        );
+        let freed = Node {
+            session: uuid(SESSION),
+            plugin: uuid(PLUGIN),
+            id: "1bcdb1b42939e3".to_owned(),
+        };
+        let wire = vec![text(SESSION), text(PLUGIN), text("1bcdb1b42939e3")];
+        assert_wire(
+            &Reply::UnloadGroupSuccess(freed.clone()),
+            "/unloadGroup.success",
+            wire.clone(),
+        );
+        assert_wire(
+            &Reply::UnloadSynthSuccess(freed),
+            "/unloadSynth.success",
             wire,
         );
     }

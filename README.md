@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` `/loadGroup` `/loadSynth` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/loadGroup.success` `/loadGroup.failure` `/loadSynth.success` `/loadSynth.failure` `/tick` |
+| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` `/loadGroup` `/loadSynth` `/unloadGroup` `/unloadSynth` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/loadGroup.success` `/loadGroup.failure` `/loadSynth.success` `/loadSynth.failure` `/unloadGroup.success` `/unloadGroup.failure` `/unloadSynth.success` `/unloadSynth.failure` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -120,6 +120,8 @@ lists the addresses of the commands.
 | `/unloadSynthdef` | session, plugin, name | `/unloadSynthdef.success session plugin name`, `/unloadSynthdef.failure session plugin name reason` |
 | `/loadGroup` | session, plugin, id, parent | `/loadGroup.success session plugin id node`, `/loadGroup.failure session plugin id reason` |
 | `/loadSynth` | session, plugin, id, parent, def, controls | `/loadSynth.success session plugin id node`, `/loadSynth.failure session plugin id reason` |
+| `/unloadGroup` | session, plugin, id | `/unloadGroup.success session plugin id`, `/unloadGroup.failure session plugin id reason` |
+| `/unloadSynth` | session, plugin, id | `/unloadSynth.success session plugin id`, `/unloadSynth.failure session plugin id reason` |
 
 - A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
