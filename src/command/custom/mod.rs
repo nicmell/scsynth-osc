@@ -5,12 +5,14 @@
 mod clock;
 mod groups;
 mod nodes;
+mod states;
 mod streams;
 mod synthdefs;
 
 pub use clock::ClockPing;
 pub use groups::{Plugin, Root};
 pub use nodes::{LoadGroup, LoadSynth, Node};
+pub use states::SetState;
 pub use streams::{Stream, StreamOpen};
 pub use synthdefs::{LoadSynthdef, Synthdef};
 
@@ -19,7 +21,7 @@ pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 13] = [
+pub const ADDRESSES: [&str; 14] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
@@ -33,6 +35,7 @@ pub const ADDRESSES: [&str; 13] = [
     "/loadSynth",
     "/unloadGroup",
     "/unloadSynth",
+    "/setState",
 ];
 
 use uuid::Uuid;
@@ -114,6 +117,12 @@ mod tests {
             plugin: other,
             id: "a".to_owned(),
         };
+        let state = SetState {
+            session,
+            plugin: other,
+            key: "a".to_owned(),
+            value: "1".to_owned(),
+        };
         let commands = [
             Command::LoadRoot(root),
             Command::UnloadRoot(root),
@@ -128,6 +137,7 @@ mod tests {
             Command::LoadSynth(synth),
             Command::UnloadGroup(node.clone()),
             Command::UnloadSynth(node),
+            Command::SetState(state),
         ];
         assert_eq!(commands.map(|command| command.address()), ADDRESSES);
     }

@@ -122,6 +122,7 @@ lists the addresses of the commands.
 | `/loadSynth` | session, plugin, id, parent, def, controls | `/loadSynth.success session plugin id node`, `/loadSynth.failure session plugin id reason` |
 | `/unloadGroup` | session, plugin, id | `/unloadGroup.success session plugin id`, `/unloadGroup.failure session plugin id reason` |
 | `/unloadSynth` | session, plugin, id | `/unloadSynth.success session plugin id`, `/unloadSynth.failure session plugin id reason` |
+| `/setState` | session, plugin, key, value | none |
 
 - A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
@@ -137,6 +138,9 @@ lists the addresses of the commands.
   plugin. `def` is the name of a synth definition.
 - The controls of `/loadSynth` follow the rules of [Controls](#controls),
   as in `/s_new`.
+- The `key` of `/setState` is the id of the element of a state, which
+  cannot be empty. Its `value` is the text of a JSON value, which the crate
+  does not read.
 - `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
   echoes it, then carries server time as a double, in milliseconds since
@@ -151,6 +155,9 @@ block of the tick modulo 2^24.
 Each holder of a stream gets `/stream.frames`. It reads the stream, then
 the frame of the timeline of its first frame as a double. Its samples
 follow as a blob of little-endian `f32`, channels interleaved.
+
+The pages of a session get `/stateChange session plugin` when the states
+of the plugin changed, and read them again.
 
 ## Strictness
 
