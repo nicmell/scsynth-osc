@@ -118,5 +118,8 @@ messages! {
         "/unloadSynth.failure" => UnloadSynthFailure(custom::NodeFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
+        /// `/stateChange`: the states of the plugin changed, and a page reads
+        /// them again.
+        "/stateChange" => StateChange(custom::Plugin),
     }
 }

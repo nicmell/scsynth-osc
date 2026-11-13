@@ -26,6 +26,10 @@
   their `.failure` a reason. An id cannot be empty.
 - The unloads of those nodes: `/unloadGroup` and `/unloadSynth`, with the
   id of the element, and the `.success` and `.failure` answers of both.
+- The states of the elements of a plugin: `/setState`, with the id of the
+  element and the text of a JSON value, which gets no answer. The pump
+  sends `/stateChange` with the session and the plugin when the states of
+  the plugin changed.
 
 ## 0.2.0 (2026-11-08)
 
