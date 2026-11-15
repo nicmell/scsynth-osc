@@ -18,8 +18,6 @@ const MAX_NAME: usize = 255;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LoadSynthdef {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The name of the definition, as `data` holds it: 1 to 255 bytes.
@@ -31,14 +29,12 @@ pub struct LoadSynthdef {
 
 impl Payload for LoadSynthdef {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.name);
         writer.blob(self.data.clone());
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let session = read_uuid(reader)?;
         let plugin = read_uuid(reader)?;
         let name = read_name(reader)?;
         let index = reader.index();
@@ -46,12 +42,7 @@ impl Payload for LoadSynthdef {
         if data.is_empty() {
             return Err(reader.invalid(index, "empty synth definition data"));
         }
-        Ok(Self {
-            session,
-            plugin,
-            name,
-            data,
-        })
+        Ok(Self { plugin, name, data })
     }
 }
 
@@ -60,8 +51,6 @@ impl Payload for LoadSynthdef {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Synthdef {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The name of the definition: 1 to 255 bytes.
@@ -70,14 +59,12 @@ pub struct Synthdef {
 
 impl Payload for Synthdef {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.name);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             name: read_name(reader)?,
         })
@@ -109,7 +96,6 @@ mod tests {
     use crate::error::DecodeErrorKind;
     use crate::testing::{assert_wire, decode, decode_error};
 
-    const SESSION: &str = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
     fn uuid(text: &str) -> Uuid {
@@ -123,7 +109,6 @@ mod tests {
     #[test]
     fn the_commands_of_the_synthdefs_have_their_wire_form() {
         let load = LoadSynthdef {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             name: "a1b2/fm-sine".to_owned(),
             data: vec![83, 67, 103, 102],
@@ -132,31 +117,29 @@ mod tests {
             &Command::LoadSynthdef(load),
             "/loadSynthdef",
             vec![
-                text(SESSION),
                 text(PLUGIN),
                 text("a1b2/fm-sine"),
                 Blob(vec![83, 67, 103, 102]),
             ],
         );
         let unload = Synthdef {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             name: "a1b2/fm-sine".to_owned(),
         };
         assert_wire(
             &Command::UnloadSynthdef(unload),
             "/unloadSynthdef",
-            vec![text(SESSION), text(PLUGIN), text("a1b2/fm-sine")],
+            vec![text(PLUGIN), text("a1b2/fm-sine")],
         );
     }
 
     #[test]
     fn a_name_takes_1_to_255_bytes_and_the_data_is_not_empty() {
-        let unload = |name: &str| vec![text(SESSION), text(PLUGIN), text(name)];
+        let unload = |name: &str| vec![text(PLUGIN), text(name)];
         for name in [String::new(), "n".repeat(256)] {
             let kind = decode_error::<Command>("/unloadSynthdef", unload(&name));
             assert!(
-                matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+                matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
                 "{}: {kind:?}",
                 name.len()
             );
@@ -165,17 +148,16 @@ mod tests {
         assert_eq!(
             decode::<Command>("/unloadSynthdef", unload(&longest)),
             Command::UnloadSynthdef(Synthdef {
-                session: uuid(SESSION),
                 plugin: uuid(PLUGIN),
                 name: longest.clone(),
             })
         );
         let kind = decode_error::<Command>(
             "/loadSynthdef",
-            vec![text(SESSION), text(PLUGIN), text("a1b2/x"), Blob(vec![])],
+            vec![text(PLUGIN), text("a1b2/x"), Blob(vec![])],
         );
         assert!(
-            matches!(kind, DecodeErrorKind::Invalid { index: 3, .. }),
+            matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
             "{kind:?}"
         );
     }

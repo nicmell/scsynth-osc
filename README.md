@@ -109,22 +109,24 @@ lists the addresses of the commands.
 
 | Command | Args | Answers |
 | --- | --- | --- |
-| `/loadRoot` | session | `/loadRoot.success session`, `/loadRoot.failure session reason` |
-| `/unloadRoot` | session | `/unloadRoot.success session`, `/unloadRoot.failure session reason` |
-| `/loadPlugin` | session, plugin | `/loadPlugin.success session plugin`, `/loadPlugin.failure session plugin reason` |
-| `/unloadPlugin` | session, plugin | `/unloadPlugin.success session plugin`, `/unloadPlugin.failure session plugin reason` |
+| `/loadRoot` | none | `/loadRoot.success`, `/loadRoot.failure reason` |
+| `/unloadRoot` | none | `/unloadRoot.success`, `/unloadRoot.failure reason` |
+| `/loadPlugin` | plugin | `/loadPlugin.success plugin`, `/loadPlugin.failure plugin reason` |
+| `/unloadPlugin` | plugin | `/unloadPlugin.success plugin`, `/unloadPlugin.failure plugin reason` |
 | `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms beat_ms latency_ms` |
-| `/stream.open` | session, stream, bus, channels | `/stream.open.success session stream channels`, `/stream.open.failure session stream reason` |
-| `/stream.close` | session, stream | none |
-| `/loadSynthdef` | session, plugin, name, data | `/loadSynthdef.success session plugin name`, `/loadSynthdef.failure session plugin name reason` |
-| `/unloadSynthdef` | session, plugin, name | `/unloadSynthdef.success session plugin name`, `/unloadSynthdef.failure session plugin name reason` |
-| `/loadGroup` | session, plugin, id, parent | `/loadGroup.success session plugin id node`, `/loadGroup.failure session plugin id reason` |
-| `/loadSynth` | session, plugin, id, parent, def, controls | `/loadSynth.success session plugin id node`, `/loadSynth.failure session plugin id reason` |
-| `/unloadGroup` | session, plugin, id | `/unloadGroup.success session plugin id`, `/unloadGroup.failure session plugin id reason` |
-| `/unloadSynth` | session, plugin, id | `/unloadSynth.success session plugin id`, `/unloadSynth.failure session plugin id reason` |
-| `/setState` | session, plugin, key, value | none |
+| `/stream.open` | stream, bus, channels | `/stream.open.success stream channels`, `/stream.open.failure stream reason` |
+| `/stream.close` | stream | none |
+| `/loadSynthdef` | plugin, name, data | `/loadSynthdef.success plugin name`, `/loadSynthdef.failure plugin name reason` |
+| `/unloadSynthdef` | plugin, name | `/unloadSynthdef.success plugin name`, `/unloadSynthdef.failure plugin name reason` |
+| `/loadGroup` | plugin, id, parent | `/loadGroup.success plugin id node`, `/loadGroup.failure plugin id reason` |
+| `/loadSynth` | plugin, id, parent, def, controls | `/loadSynth.success plugin id node`, `/loadSynth.failure plugin id reason` |
+| `/unloadGroup` | plugin, id | `/unloadGroup.success plugin id`, `/unloadGroup.failure plugin id reason` |
+| `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
+| `/setState` | plugin, key, value | none |
 
-- A session or a plugin is a `uuid::Uuid`. It travels as an OSC string,
+- The messages name no session: the websocket of a page belongs to one
+  session, which its URL names.
+- A plugin or a stream is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
 - The name of a synth definition takes 1 to 255 bytes, and decoding
   refuses any other length. A synth definition file gives the length of a
@@ -156,8 +158,8 @@ Each holder of a stream gets `/stream.frames`. It reads the stream, then
 the frame of the timeline of its first frame as a double. Its samples
 follow as a blob of little-endian `f32`, channels interleaved.
 
-The pages of a session get `/stateChange session plugin` when the states
-of the plugin changed, and read them again.
+The pages of a session get `/stateChange plugin` when the states of the
+plugin changed, and read them again.
 
 ## Strictness
 

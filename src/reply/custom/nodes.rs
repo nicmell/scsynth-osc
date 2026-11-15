@@ -14,8 +14,6 @@ use crate::types::NodeId;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeLoaded {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
@@ -26,7 +24,6 @@ pub struct NodeLoaded {
 
 impl Payload for NodeLoaded {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
         self.node.write(writer);
@@ -34,7 +31,6 @@ impl Payload for NodeLoaded {
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
             node: NodeId::read(reader)?,
@@ -51,8 +47,6 @@ pub type Node = crate::command::custom::Node;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeFailure {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
@@ -63,7 +57,6 @@ pub struct NodeFailure {
 
 impl Payload for NodeFailure {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
         writer.string(&self.reason);
@@ -71,7 +64,6 @@ impl Payload for NodeFailure {
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
             reason: reader.string()?,
@@ -88,7 +80,6 @@ mod tests {
     use crate::error::DecodeErrorKind;
     use crate::testing::{assert_wire, decode_error};
 
-    const SESSION: &str = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
     fn uuid(text: &str) -> Uuid {
@@ -102,17 +93,11 @@ mod tests {
     #[test]
     fn the_answers_of_the_nodes_have_their_wire_form() {
         let loaded = NodeLoaded {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             id: "1bcdb1b42939e3".to_owned(),
             node: NodeId(67_174_405),
         };
-        let wire = vec![
-            text(SESSION),
-            text(PLUGIN),
-            text("1bcdb1b42939e3"),
-            Int(67_174_405),
-        ];
+        let wire = vec![text(PLUGIN), text("1bcdb1b42939e3"), Int(67_174_405)];
         assert_wire(
             &Reply::LoadGroupSuccess(loaded.clone()),
             "/loadGroup.success",
@@ -120,13 +105,11 @@ mod tests {
         );
         assert_wire(&Reply::LoadSynthSuccess(loaded), "/loadSynth.success", wire);
         let failure = NodeFailure {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             id: "1bcdb1b42939e3".to_owned(),
             reason: "The group of the plugin is not ready.".to_owned(),
         };
         let wire = vec![
-            text(SESSION),
             text(PLUGIN),
             text("1bcdb1b42939e3"),
             text("The group of the plugin is not ready."),
@@ -152,11 +135,10 @@ mod tests {
             wire,
         );
         let freed = Node {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             id: "1bcdb1b42939e3".to_owned(),
         };
-        let wire = vec![text(SESSION), text(PLUGIN), text("1bcdb1b42939e3")];
+        let wire = vec![text(PLUGIN), text("1bcdb1b42939e3")];
         assert_wire(
             &Reply::UnloadGroupSuccess(freed.clone()),
             "/unloadGroup.success",
@@ -171,12 +153,10 @@ mod tests {
 
     #[test]
     fn an_answer_with_an_empty_id_does_not_decode() {
-        let kind = decode_error::<Reply>(
-            "/loadSynth.success",
-            vec![text(SESSION), text(PLUGIN), text(""), Int(7)],
-        );
+        let kind =
+            decode_error::<Reply>("/loadSynth.success", vec![text(PLUGIN), text(""), Int(7)]);
         assert!(
-            matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+            matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
             "{kind:?}"
         );
     }

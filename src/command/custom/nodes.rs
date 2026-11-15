@@ -13,8 +13,6 @@ use crate::types::ControlSetting;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LoadGroup {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
@@ -26,7 +24,6 @@ pub struct LoadGroup {
 
 impl Payload for LoadGroup {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
         writer.string(&self.parent);
@@ -34,7 +31,6 @@ impl Payload for LoadGroup {
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
             parent: reader.string()?,
@@ -47,8 +43,6 @@ impl Payload for LoadGroup {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LoadSynth {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
@@ -64,7 +58,6 @@ pub struct LoadSynth {
 
 impl Payload for LoadSynth {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
         writer.string(&self.parent);
@@ -76,7 +69,6 @@ impl Payload for LoadSynth {
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
             parent: reader.string()?,
@@ -91,8 +83,6 @@ impl Payload for LoadSynth {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Node {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
@@ -101,14 +91,12 @@ pub struct Node {
 
 impl Payload for Node {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
         })
@@ -134,7 +122,6 @@ mod tests {
     use crate::error::DecodeErrorKind;
     use crate::testing::{assert_wire, decode, decode_error};
 
-    const SESSION: &str = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
     fn uuid(text: &str) -> Uuid {
@@ -148,7 +135,6 @@ mod tests {
     #[test]
     fn the_commands_of_the_nodes_have_their_wire_form() {
         let group = LoadGroup {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             id: "39fc2565fa0c9".to_owned(),
             parent: String::new(),
@@ -156,10 +142,9 @@ mod tests {
         assert_wire(
             &Command::LoadGroup(group),
             "/loadGroup",
-            vec![text(SESSION), text(PLUGIN), text("39fc2565fa0c9"), text("")],
+            vec![text(PLUGIN), text("39fc2565fa0c9"), text("")],
         );
         let synth = LoadSynth {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             id: "1bcdb1b42939e3".to_owned(),
             parent: "39fc2565fa0c9".to_owned(),
@@ -173,7 +158,6 @@ mod tests {
             &Command::LoadSynth(synth),
             "/loadSynth",
             vec![
-                text(SESSION),
                 text(PLUGIN),
                 text("1bcdb1b42939e3"),
                 text("39fc2565fa0c9"),
@@ -185,11 +169,10 @@ mod tests {
             ],
         );
         let node = Node {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             id: "39fc2565fa0c9".to_owned(),
         };
-        let wire = vec![text(SESSION), text(PLUGIN), text("39fc2565fa0c9")];
+        let wire = vec![text(PLUGIN), text("39fc2565fa0c9")];
         assert_wire(
             &Command::UnloadGroup(node.clone()),
             "/unloadGroup",
@@ -200,47 +183,39 @@ mod tests {
 
     #[test]
     fn an_id_is_not_empty_and_a_definition_takes_1_to_255_bytes() {
-        let group = |id: &str| vec![text(SESSION), text(PLUGIN), text(id), text("")];
+        let group = |id: &str| vec![text(PLUGIN), text(id), text("")];
         let kind = decode_error::<Command>("/loadGroup", group(""));
         assert!(
-            matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+            matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
             "{kind:?}"
         );
         for address in ["/unloadGroup", "/unloadSynth"] {
-            let kind =
-                decode_error::<Command>(address, vec![text(SESSION), text(PLUGIN), text("")]);
+            let kind = decode_error::<Command>(address, vec![text(PLUGIN), text("")]);
             assert!(
-                matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+                matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
                 "{address}: {kind:?}"
             );
         }
         assert_eq!(
             decode::<Command>("/loadGroup", group("a")),
             Command::LoadGroup(LoadGroup {
-                session: uuid(SESSION),
                 plugin: uuid(PLUGIN),
                 id: "a".to_owned(),
                 parent: String::new(),
             })
         );
-        let synth = |def: &str| vec![text(SESSION), text(PLUGIN), text("a"), text(""), text(def)];
+        let synth = |def: &str| vec![text(PLUGIN), text("a"), text(""), text(def)];
         for def in [String::new(), "n".repeat(256)] {
             let kind = decode_error::<Command>("/loadSynth", synth(&def));
             assert!(
-                matches!(kind, DecodeErrorKind::Invalid { index: 4, .. }),
+                matches!(kind, DecodeErrorKind::Invalid { index: 3, .. }),
                 "{}: {kind:?}",
                 def.len()
             );
         }
         let kind = decode_error::<Command>(
             "/loadSynth",
-            vec![
-                text("not a uuid"),
-                text(PLUGIN),
-                text("a"),
-                text(""),
-                text("b"),
-            ],
+            vec![text("not a uuid"), text("a"), text(""), text("b")],
         );
         assert!(
             matches!(kind, DecodeErrorKind::Invalid { index: 0, .. }),

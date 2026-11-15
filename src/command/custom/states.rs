@@ -12,8 +12,6 @@ use crate::error::DecodeError;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetState {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// The id of the element of the state. It cannot be empty.
@@ -24,7 +22,6 @@ pub struct SetState {
 
 impl Payload for SetState {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.key);
         writer.string(&self.value);
@@ -32,7 +29,6 @@ impl Payload for SetState {
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             key: read_id(reader)?,
             value: reader.string()?,
@@ -49,7 +45,6 @@ mod tests {
     use crate::testing::{assert_wire, decode_error};
     use crate::{Command, Reply};
 
-    const SESSION: &str = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
     fn uuid(text: &str) -> Uuid {
@@ -63,7 +58,6 @@ mod tests {
     #[test]
     fn the_messages_of_the_states_have_their_wire_form() {
         let set = SetState {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             key: "c37dbff1fc4849b22e0d54edbe2fa1c6".to_owned(),
             value: "[0.5, 2]".to_owned(),
@@ -72,31 +66,26 @@ mod tests {
             &Command::SetState(set),
             "/setState",
             vec![
-                text(SESSION),
                 text(PLUGIN),
                 text("c37dbff1fc4849b22e0d54edbe2fa1c6"),
                 text("[0.5, 2]"),
             ],
         );
         let change = crate::reply::custom::Plugin {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
         };
         assert_wire(
             &Reply::StateChange(change),
             "/stateChange",
-            vec![text(SESSION), text(PLUGIN)],
+            vec![text(PLUGIN)],
         );
     }
 
     #[test]
     fn a_key_is_not_empty() {
-        let kind = decode_error::<Command>(
-            "/setState",
-            vec![text(SESSION), text(PLUGIN), text(""), text("1")],
-        );
+        let kind = decode_error::<Command>("/setState", vec![text(PLUGIN), text(""), text("1")]);
         assert!(
-            matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
+            matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
             "{kind:?}"
         );
     }

@@ -164,10 +164,10 @@ messages! {
         /// buses.
         "/c_getn" => CGetn(control_bus::CGetn),
         /// `/loadRoot`: the pump loads the root group of the session.
-        "/loadRoot" => LoadRoot(custom::Root),
+        "/loadRoot" => LoadRoot,
         /// `/unloadRoot`: the pump releases the holds of the page, and frees
         /// the root group of the session once nobody holds it.
-        "/unloadRoot" => UnloadRoot(custom::Root),
+        "/unloadRoot" => UnloadRoot,
         /// `/loadPlugin`: the pump loads the group of the plugin.
         "/loadPlugin" => LoadPlugin(custom::Plugin),
         /// `/unloadPlugin`: the pump releases the page's hold on the group of

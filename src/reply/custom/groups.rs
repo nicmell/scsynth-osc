@@ -7,10 +7,6 @@ use crate::codec::{Payload, Reader, Writer};
 use crate::command::custom::{read_uuid, write_uuid};
 use crate::error::DecodeError;
 
-/// The arguments of `/loadRoot.success` and `/unloadRoot.success`: see
-/// [`crate::command::custom::Root`].
-pub type Root = crate::command::custom::Root;
-
 /// The arguments of `/loadPlugin.success` and `/unloadPlugin.success`: see
 /// [`crate::command::custom::Plugin`].
 pub type Plugin = crate::command::custom::Plugin;
@@ -19,21 +15,17 @@ pub type Plugin = crate::command::custom::Plugin;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RootFailure {
-    /// The session.
-    pub session: Uuid,
     /// Why the command failed.
     pub reason: String,
 }
 
 impl Payload for RootFailure {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         writer.string(&self.reason);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             reason: reader.string()?,
         })
     }
@@ -43,8 +35,6 @@ impl Payload for RootFailure {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PluginFailure {
-    /// The session.
-    pub session: Uuid,
     /// The plugin.
     pub plugin: Uuid,
     /// Why the command failed.
@@ -53,14 +43,12 @@ pub struct PluginFailure {
 
 impl Payload for PluginFailure {
     fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.session);
         write_uuid(writer, self.plugin);
         writer.string(&self.reason);
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
-            session: read_uuid(reader)?,
             plugin: read_uuid(reader)?,
             reason: reader.string()?,
         })
@@ -76,7 +64,6 @@ mod tests {
     use crate::error::DecodeErrorKind;
     use crate::testing::{assert_wire, decode_error};
 
-    const SESSION: &str = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
     fn uuid(text: &str) -> Uuid {
@@ -89,21 +76,12 @@ mod tests {
 
     #[test]
     fn the_answers_of_the_pump_have_their_wire_form() {
-        let root = Root {
-            session: uuid(SESSION),
-        };
-        let wire = || vec![text(SESSION)];
-        assert_wire(&Reply::LoadRootSuccess(root), "/loadRoot.success", wire());
-        assert_wire(
-            &Reply::UnloadRootSuccess(root),
-            "/unloadRoot.success",
-            wire(),
-        );
+        assert_wire(&Reply::LoadRootSuccess, "/loadRoot.success", vec![]);
+        assert_wire(&Reply::UnloadRootSuccess, "/unloadRoot.success", vec![]);
         let failure = RootFailure {
-            session: uuid(SESSION),
             reason: "scsynth did not answer in time.".to_owned(),
         };
-        let wire = || vec![text(SESSION), text("scsynth did not answer in time.")];
+        let wire = || vec![text("scsynth did not answer in time.")];
         assert_wire(
             &Reply::LoadRootFailure(failure.clone()),
             "/loadRoot.failure",
@@ -115,10 +93,9 @@ mod tests {
             wire(),
         );
         let plugin = Plugin {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
         };
-        let wire = || vec![text(SESSION), text(PLUGIN)];
+        let wire = || vec![text(PLUGIN)];
         assert_wire(
             &Reply::LoadPluginSuccess(plugin),
             "/loadPlugin.success",
@@ -130,17 +107,10 @@ mod tests {
             wire(),
         );
         let failure = PluginFailure {
-            session: uuid(SESSION),
             plugin: uuid(PLUGIN),
             reason: "The root group is not ready.".to_owned(),
         };
-        let wire = || {
-            vec![
-                text(SESSION),
-                text(PLUGIN),
-                text("The root group is not ready."),
-            ]
-        };
+        let wire = || vec![text(PLUGIN), text("The root group is not ready.")];
         assert_wire(
             &Reply::LoadPluginFailure(failure.clone()),
             "/loadPlugin.failure",
@@ -156,15 +126,15 @@ mod tests {
     #[test]
     fn a_failure_names_its_reason() {
         assert_eq!(
-            decode_error::<Reply>("/loadRoot.failure", vec![text(SESSION)]),
+            decode_error::<Reply>("/loadRoot.failure", vec![]),
             DecodeErrorKind::Missing {
-                index: 1,
+                index: 0,
                 expected: "a string"
             }
         );
-        let kind = decode_error::<Reply>("/loadPlugin.success", vec![text(SESSION), text("x")]);
+        let kind = decode_error::<Reply>("/loadPlugin.success", vec![text("x")]);
         assert!(
-            matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
+            matches!(kind, DecodeErrorKind::Invalid { index: 0, .. }),
             "{kind:?}"
         );
     }

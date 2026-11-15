@@ -2,11 +2,17 @@
 
 ## Branch sc-app3 (unreleased)
 
+### Changed
+
+- The messages of sc-app3's pump name no session, because the websocket of
+  a page belongs to one session. `/loadRoot`, `/unloadRoot` and their
+  `.success` answers take no argument.
+
 ### Added
 
 - The messages of sc-app3's pump: `/loadRoot`, `/unloadRoot`,
   `/loadPlugin` and `/unloadPlugin`, and their `.success` and `.failure`
-  answers, with their sessions and plugins as `uuid::Uuid`. Their types are
+  answers, with their plugins as `uuid::Uuid`. Their types are
   in the modules `command::custom` and `reply::custom`, and
   `command::custom::ADDRESSES` lists the addresses of the commands. See
   [The protocol of sc-app3's pump](README.md#the-protocol-of-sc-app3s-pump).
@@ -28,8 +34,8 @@
   id of the element, and the `.success` and `.failure` answers of both.
 - The states of the elements of a plugin: `/setState`, with the id of the
   element and the text of a JSON value, which gets no answer. The pump
-  sends `/stateChange` with the session and the plugin when the states of
-  the plugin changed.
+  sends `/stateChange` with the plugin when the states of the plugin
+  changed.
 
 ## 0.2.0 (2026-11-08)
 
