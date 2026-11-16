@@ -10,7 +10,7 @@ mod streams;
 mod synthdefs;
 
 pub use clock::ClockPing;
-pub use groups::{Plugin, Root};
+pub use groups::Plugin;
 pub use nodes::{LoadGroup, LoadSynth, Node};
 pub use states::SetState;
 pub use streams::{Stream, StreamOpen};
@@ -71,41 +71,29 @@ mod tests {
 
     #[test]
     fn the_addresses_of_the_pump_are_those_of_its_commands() {
-        let (session, other) = (Uuid::from_u128(1), Uuid::from_u128(2));
-        let root = Root { session };
-        let plugin = Plugin {
-            session,
-            plugin: other,
-        };
-        let stream = Stream {
-            session,
-            stream: other,
-        };
+        let other = Uuid::from_u128(2);
+        let plugin = Plugin { plugin: other };
+        let stream = Stream { stream: other };
         let open = StreamOpen {
-            session,
             stream: other,
             bus: 256,
             channels: 1,
         };
         let synthdef = Synthdef {
-            session,
             plugin: other,
             name: "a1b2/sine".to_owned(),
         };
         let load = LoadSynthdef {
-            session,
             plugin: other,
             name: synthdef.name.clone(),
             data: vec![1],
         };
         let group = LoadGroup {
-            session,
             plugin: other,
             id: "a".to_owned(),
             parent: String::new(),
         };
         let synth = LoadSynth {
-            session,
             plugin: other,
             id: "b".to_owned(),
             parent: "a".to_owned(),
@@ -113,19 +101,17 @@ mod tests {
             controls: Vec::new(),
         };
         let node = Node {
-            session,
             plugin: other,
             id: "a".to_owned(),
         };
         let state = SetState {
-            session,
             plugin: other,
             key: "a".to_owned(),
             value: "1".to_owned(),
         };
         let commands = [
-            Command::LoadRoot(root),
-            Command::UnloadRoot(root),
+            Command::LoadRoot,
+            Command::UnloadRoot,
             Command::LoadPlugin(plugin),
             Command::UnloadPlugin(plugin),
             Command::ClockPing(ClockPing { sent_ms: 0.0 }),

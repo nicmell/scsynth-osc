@@ -67,11 +67,11 @@ messages! {
         /// `/tr`: a `SendTrig` unit generator triggered.
         "/tr" => Tr(trigger::Tr),
         /// `/loadRoot.success`: the root group is ready.
-        "/loadRoot.success" => LoadRootSuccess(custom::Root),
+        "/loadRoot.success" => LoadRootSuccess,
         /// `/loadRoot.failure`: the pump refused the load, or it failed.
         "/loadRoot.failure" => LoadRootFailure(custom::RootFailure),
         /// `/unloadRoot.success`: the root group is free.
-        "/unloadRoot.success" => UnloadRootSuccess(custom::Root),
+        "/unloadRoot.success" => UnloadRootSuccess,
         /// `/unloadRoot.failure`: the pump refused the unload, or it failed.
         "/unloadRoot.failure" => UnloadRootFailure(custom::RootFailure),
         /// `/loadPlugin.success`: the group of the plugin is ready.

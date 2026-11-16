@@ -4,7 +4,7 @@
 use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleFormat};
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
-use scsynth_osc::command::custom::{LoadSynth, LoadSynthdef, Plugin, Root, SetState};
+use scsynth_osc::command::custom::{LoadSynth, LoadSynthdef, Plugin, SetState};
 use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
@@ -647,31 +647,23 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
 
 #[test]
 fn a_message_of_the_pump_names_its_uuids() {
-    let session = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
     let uuid = |text: &str| text.parse().expect("a uuid");
-    round_trip(
-        &Command::LoadRoot(Root {
-            session: uuid(session),
-        }),
-        json!({"address": "/loadRoot", "args": {"session": session}}),
-    );
+    round_trip(&Command::LoadRoot, json!({"address": "/loadRoot"}));
     round_trip(
         &Command::UnloadPlugin(Plugin {
-            session: uuid(session),
             plugin: uuid(plugin),
         }),
-        json!({"address": "/unloadPlugin", "args": {"session": session, "plugin": plugin}}),
+        json!({"address": "/unloadPlugin", "args": {"plugin": plugin}}),
     );
     let failure = PluginFailure {
-        session: uuid(session),
         plugin: uuid(plugin),
         reason: "The root group is not ready.".to_owned(),
     };
     round_trip(
         &Reply::LoadPluginFailure(failure),
         json!({"address": "/loadPlugin.failure", "args": {
-            "session": session, "plugin": plugin, "reason": "The root group is not ready."
+            "plugin": plugin, "reason": "The root group is not ready."
         }}),
     );
 }
@@ -694,22 +686,19 @@ fn the_frames_of_a_stream_are_their_bytes() {
 
 #[test]
 fn a_synthdef_of_the_pump_is_its_name_and_its_bytes() {
-    let session = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
     let uuid = |text: &str| text.parse().expect("a uuid");
     round_trip(
         &Command::LoadSynthdef(LoadSynthdef {
-            session: uuid(session),
             plugin: uuid(plugin),
             name: "a1b2/sine".to_owned(),
             data: vec![83, 67, 103, 102],
         }),
         json!({"address": "/loadSynthdef", "args": {
-            "session": session, "plugin": plugin, "name": "a1b2/sine", "data": [83, 67, 103, 102]
+            "plugin": plugin, "name": "a1b2/sine", "data": [83, 67, 103, 102]
         }}),
     );
     let failure = SynthdefFailure {
-        session: uuid(session),
         plugin: uuid(plugin),
         name: "a1b2/sine".to_owned(),
         reason: "The definition is too large to send to scsynth.".to_owned(),
@@ -717,7 +706,7 @@ fn a_synthdef_of_the_pump_is_its_name_and_its_bytes() {
     round_trip(
         &Reply::LoadSynthdefFailure(failure),
         json!({"address": "/loadSynthdef.failure", "args": {
-            "session": session, "plugin": plugin, "name": "a1b2/sine",
+            "plugin": plugin, "name": "a1b2/sine",
             "reason": "The definition is too large to send to scsynth."
         }}),
     );
@@ -725,12 +714,10 @@ fn a_synthdef_of_the_pump_is_its_name_and_its_bytes() {
 
 #[test]
 fn a_node_of_the_pump_is_its_ids_and_its_controls() {
-    let session = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
     let uuid = |text: &str| text.parse().expect("a uuid");
     round_trip(
         &Command::LoadSynth(LoadSynth {
-            session: uuid(session),
             plugin: uuid(plugin),
             id: "1bcdb1b42939e3".to_owned(),
             parent: String::new(),
@@ -738,45 +725,41 @@ fn a_node_of_the_pump_is_its_ids_and_its_controls() {
             controls: vec![ControlSetting::new("freq", 261.0)],
         }),
         json!({"address": "/loadSynth", "args": {
-            "session": session, "plugin": plugin, "id": "1bcdb1b42939e3", "parent": "",
+            "plugin": plugin, "id": "1bcdb1b42939e3", "parent": "",
             "def": "32183c940ae4", "controls": [{"control": "freq", "value": 261.0}]
         }}),
     );
     round_trip(
         &Reply::LoadSynthSuccess(NodeLoaded {
-            session: uuid(session),
             plugin: uuid(plugin),
             id: "1bcdb1b42939e3".to_owned(),
             node: NodeId(67_174_405),
         }),
         json!({"address": "/loadSynth.success", "args": {
-            "session": session, "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_174_405
+            "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_174_405
         }}),
     );
 }
 
 #[test]
 fn a_state_of_the_pump_is_its_key_and_the_json_of_its_value() {
-    let session = "5049297f-342b-4b8b-8c62-54edbb5d3335";
     let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
     let uuid = |text: &str| text.parse().expect("a uuid");
     round_trip(
         &Command::SetState(SetState {
-            session: uuid(session),
             plugin: uuid(plugin),
             key: "c37dbff1fc4849b22e0d54edbe2fa1c6".to_owned(),
             value: "330.0".to_owned(),
         }),
         json!({"address": "/setState", "args": {
-            "session": session, "plugin": plugin,
+            "plugin": plugin,
             "key": "c37dbff1fc4849b22e0d54edbe2fa1c6", "value": "330.0"
         }}),
     );
     round_trip(
         &Reply::StateChange(Plugin {
-            session: uuid(session),
             plugin: uuid(plugin),
         }),
-        json!({"address": "/stateChange", "args": {"session": session, "plugin": plugin}}),
+        json!({"address": "/stateChange", "args": {"plugin": plugin}}),
     );
 }

@@ -9,7 +9,7 @@ mod streams;
 mod synthdefs;
 
 pub use clock::{ClockPong, Tick};
-pub use groups::{Plugin, PluginFailure, Root, RootFailure};
+pub use groups::{Plugin, PluginFailure, RootFailure};
 pub use nodes::{Node, NodeFailure, NodeLoaded};
 pub use streams::{StreamFailure, StreamFrames, StreamOpened};
 pub use synthdefs::{Synthdef, SynthdefFailure};
