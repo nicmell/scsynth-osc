@@ -5,11 +5,13 @@
 mod clock;
 mod groups;
 mod nodes;
+mod states;
 mod streams;
 mod synthdefs;
 
 pub use clock::{ClockPong, Tick};
 pub use groups::{Plugin, PluginFailure, RootFailure};
 pub use nodes::{Node, NodeFailure, NodeLoaded};
+pub use states::States;
 pub use streams::{StreamFailure, StreamFrames, StreamOpened};
 pub use synthdefs::{Synthdef, SynthdefFailure};

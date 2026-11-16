@@ -123,6 +123,7 @@ lists the addresses of the commands.
 | `/unloadGroup` | plugin, id | `/unloadGroup.success plugin id`, `/unloadGroup.failure plugin id reason` |
 | `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
 | `/setState` | plugin, key, value | none |
+| `/getState` | plugin | `/getState.success plugin states`, `/getState.failure plugin reason` |
 
 - The messages name no session: the websocket of a page belongs to one
   session, which its URL names.
@@ -143,6 +144,8 @@ lists the addresses of the commands.
 - The `key` of `/setState` is the id of the element of a state, which
   cannot be empty. Its `value` is the text of a JSON value, which the crate
   does not read.
+- The `states` of `/getState.success` is the text of a JSON object from
+  the key of each state to its value, which the crate does not read.
 - `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
   echoes it, then carries server time as a double, in milliseconds since
@@ -159,7 +162,7 @@ the frame of the timeline of its first frame as a double. Its samples
 follow as a blob of little-endian `f32`, channels interleaved.
 
 The pages of a session get `/stateChange plugin` when the states of the
-plugin changed, and read them again.
+plugin changed, and read them again with `/getState plugin`.
 
 ## Strictness
 

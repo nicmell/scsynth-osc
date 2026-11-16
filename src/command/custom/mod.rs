@@ -21,7 +21,7 @@ pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 14] = [
+pub const ADDRESSES: [&str; 15] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
@@ -36,6 +36,7 @@ pub const ADDRESSES: [&str; 14] = [
     "/unloadGroup",
     "/unloadSynth",
     "/setState",
+    "/getState",
 ];
 
 use uuid::Uuid;
@@ -124,6 +125,7 @@ mod tests {
             Command::UnloadGroup(node.clone()),
             Command::UnloadSynth(node),
             Command::SetState(state),
+            Command::GetState(plugin),
         ];
         assert_eq!(commands.map(|command| command.address()), ADDRESSES);
     }
