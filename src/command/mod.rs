@@ -202,6 +202,9 @@ messages! {
         /// `/setState`: the pump keeps the value of a state of an element of
         /// the plugin, and answers nothing.
         "/setState" => SetState(custom::SetState),
+        /// `/getState`: the pump answers the values of the states of the
+        /// elements of the plugin.
+        "/getState" => GetState(custom::Plugin),
     }
 }
 

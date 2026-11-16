@@ -79,6 +79,10 @@ mod tests {
             "/stateChange",
             vec![text(PLUGIN)],
         );
+        let read = super::super::Plugin {
+            plugin: uuid(PLUGIN),
+        };
+        assert_wire(&Command::GetState(read), "/getState", vec![text(PLUGIN)]);
     }
 
     #[test]

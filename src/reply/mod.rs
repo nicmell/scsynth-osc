@@ -121,5 +121,11 @@ messages! {
         /// `/stateChange`: the states of the plugin changed, and a page reads
         /// them again.
         "/stateChange" => StateChange(custom::Plugin),
+        /// `/getState.success`: the values of the states of the plugin, to
+        /// the page that asked.
+        "/getState.success" => GetStateSuccess(custom::States),
+        /// `/getState.failure`: the pump could not read the states of the
+        /// plugin.
+        "/getState.failure" => GetStateFailure(custom::PluginFailure),
     }
 }
