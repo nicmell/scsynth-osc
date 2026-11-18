@@ -146,7 +146,7 @@ lists the addresses of the commands.
   does not read.
 - The `states` of `/getState.success` is the text of a JSON object from
   the key of each state to its value, which the crate does not read.
-- `docs/osc-bridge.md` of sc-app3 says what the pump does with them.
+- `docs/protocol.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
   echoes it, then carries server time as a double, in milliseconds since
   the Unix epoch. Then come the beat of the pump and the latency of the
