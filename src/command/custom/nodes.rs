@@ -78,8 +78,9 @@ impl Payload for LoadSynth {
     }
 }
 
-/// The arguments of `/unloadGroup` and `/unloadSynth`, and of the
-/// `.success` of both commands: the node of an element of a plugin.
+/// The arguments of `/unloadGroup` and `/unloadSynth`, of the `.success` of
+/// both commands, and of `/loadDirt.success`: the node of an element of a
+/// plugin.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Node {

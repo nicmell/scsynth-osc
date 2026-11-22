@@ -38,12 +38,13 @@ impl Payload for NodeLoaded {
     }
 }
 
-/// The arguments of `/unloadGroup.success` and `/unloadSynth.success`: see
-/// [`crate::command::custom::Node`].
+/// The arguments of `/unloadGroup.success`, `/unloadSynth.success` and
+/// `/loadDirt.success`: see [`crate::command::custom::Node`].
 pub type Node = crate::command::custom::Node;
 
 /// The arguments of `/loadGroup.failure`, `/loadSynth.failure`,
-/// `/unloadGroup.failure` and `/unloadSynth.failure`.
+/// `/unloadGroup.failure`, `/unloadSynth.failure`, `/loadDirt.failure` and
+/// `/dirt.play.failure`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeFailure {
@@ -51,7 +52,7 @@ pub struct NodeFailure {
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
     pub id: String,
-    /// Why the load or the unload failed.
+    /// Why the command failed.
     pub reason: String,
 }
 
