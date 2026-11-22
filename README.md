@@ -407,7 +407,17 @@ remove it.
     numbers in JSON, and a `Uint8Array` through serde-wasm-bindgen. A
     time tag is `{"seconds", "fraction"}`, a color is `{"red", "green",
     "blue", "alpha"}`, and a MIDI message is `{"port", "status", "data1",
-    "data2"}`.
+    "data2"}`. `RAW_TYPESCRIPT` holds the TypeScript declarations of
+    `RawMessage` and `RawArg`, as the values that serde-wasm-bindgen
+    writes, for the `typescript_custom_section` of a wasm-bindgen crate.
+    By default, serde-wasm-bindgen writes the data of `h` as a number, and
+    fails on a value outside the safe integers of JavaScript. With
+    `serialize_large_number_types_as_bigints(true)`, it writes a `BigInt`.
+    With `serialize_bytes_as_arrays(true)`, which `json_compatible()` also
+    sets, it writes a blob as an array of numbers, and the declarations do
+    not name that form. It reads the data of `h` from a safe integer or a
+    `BigInt`, and a blob from a `Uint8Array`, an `ArrayBuffer` or an array
+    of numbers.
   - [`examples/vite`](https://github.com/nicmell/scsynth-osc/tree/main/examples/vite)
     runs the crate in the browser, compiled to wasm, and shows each
     message typed, raw and as bytes.
