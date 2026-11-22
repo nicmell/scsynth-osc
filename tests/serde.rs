@@ -584,9 +584,8 @@ fn a_raw_array_is_the_sequence_of_its_args() {
     }
 }
 
-#[test]
-fn a_raw_message_is_its_address_and_its_typed_args() {
-    let raw = RawMessage {
+fn raw_message_of_every_type() -> RawMessage {
+    RawMessage {
         address: "/demo".to_owned(),
         args: vec![
             RawArg::Int(-1),
@@ -618,7 +617,66 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
             RawArg::Nil,
             RawArg::Inf,
         ],
-    };
+    }
+}
+
+#[test]
+fn the_keys_and_tags_of_raw_typescript_are_those_that_serde_writes() {
+    let mut parts = scsynth_osc::RAW_TYPESCRIPT.split("/*");
+    let mut code = parts.next().unwrap_or_default().to_owned();
+    for part in parts {
+        code.push_str(part.split_once("*/").expect("a comment ends").1);
+    }
+    assert!(!code.contains("//"), "the reader skips no line comment");
+    let properties: std::collections::BTreeSet<&str> = code
+        .split_whitespace()
+        .filter_map(|word| word.strip_suffix(':'))
+        .collect();
+    let declared: std::collections::BTreeSet<&str> = code
+        .split("type:")
+        .skip(1)
+        .flat_map(|rest| {
+            rest.split_once([';', '}'])
+                .expect("a union ends")
+                .0
+                .split('|')
+        })
+        .map(|tag| {
+            let tag = tag.trim();
+            tag.strip_prefix('"')
+                .and_then(|inner| inner.strip_suffix('"'))
+                .unwrap_or_else(|| panic!("{tag} is no tag in double quotes"))
+        })
+        .collect();
+
+    let json = serde_json::to_value(raw_message_of_every_type()).expect("serializes");
+    let mut keys = std::collections::BTreeSet::new();
+    let mut tags = std::collections::BTreeSet::new();
+    let mut values = vec![&json];
+    while let Some(value) = values.pop() {
+        match value {
+            serde_json::Value::Object(object) => {
+                keys.extend(object.keys().map(String::as_str));
+                tags.extend(object.get("type").and_then(serde_json::Value::as_str));
+                values.extend(object.values());
+            }
+            serde_json::Value::Array(items) => values.extend(items),
+            _ => {}
+        }
+    }
+    assert_eq!(
+        keys, properties,
+        "the keys that serde writes, then the properties declared"
+    );
+    assert_eq!(
+        tags, declared,
+        "the tags that serde writes, then those declared"
+    );
+}
+
+#[test]
+fn a_raw_message_is_its_address_and_its_typed_args() {
+    let raw = raw_message_of_every_type();
     round_trip(
         &raw,
         json!({"address": "/demo", "args": [

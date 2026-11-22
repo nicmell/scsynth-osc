@@ -17,6 +17,8 @@ pub use command::top_level::SyncId;
 pub use command::{Command, Completion};
 pub use error::{DecodeError, DecodeErrorKind};
 pub use packet::{Bundle, Packet, Timetag};
+#[cfg(feature = "serde")]
+pub use raw::RAW_TYPESCRIPT;
 pub use raw::{Color, MidiMessage, RawArg, RawMessage};
 pub use reply::Reply;
 pub use types::{

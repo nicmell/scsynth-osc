@@ -7,6 +7,9 @@ use scsynth_osc::{Command, RawMessage, Reply};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
+#[wasm_bindgen(typescript_custom_section)]
+const RAW: &str = scsynth_osc::RAW_TYPESCRIPT;
+
 /// The OSC bytes of a command in its typed form.
 ///
 /// # Errors
@@ -35,7 +38,9 @@ pub fn encode_reply(reply: JsValue) -> Result<Vec<u8>, JsError> {
 ///
 /// When `raw` is not the raw form of a message.
 #[wasm_bindgen(js_name = encodeRaw)]
-pub fn encode_raw(raw: JsValue) -> Result<Vec<u8>, JsError> {
+pub fn encode_raw(
+    #[wasm_bindgen(unchecked_param_type = "RawMessage")] raw: JsValue,
+) -> Result<Vec<u8>, JsError> {
     let raw: RawMessage = serde_wasm_bindgen::from_value(raw)?;
     Ok(raw.encode())
 }
@@ -65,7 +70,7 @@ pub fn decode_reply(bytes: &[u8]) -> Result<JsValue, JsError> {
 /// # Errors
 ///
 /// When `bytes` do not hold one OSC message of the types of a raw message.
-#[wasm_bindgen(js_name = decodeRaw)]
+#[wasm_bindgen(js_name = decodeRaw, unchecked_return_type = "RawMessage")]
 pub fn decode_raw(bytes: &[u8]) -> Result<JsValue, JsError> {
     to_js(&RawMessage::decode(bytes)?)
 }

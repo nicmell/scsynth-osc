@@ -36,6 +36,12 @@ npm run dev    # or: npm run build, then npm run preview
   `decodeReply` and `decodeRaw` do the reverse. serde-wasm-bindgen turns
   the library's serde form into JS objects and back. An error is a JS
   `Error` with the library's message.
+- The type of a raw message comes from the library. `wasm/` adds its
+  `RAW_TYPESCRIPT` to the types of `pkg/` with
+  `typescript_custom_section`, and gives `encodeRaw` and `decodeRaw` the
+  type `RawMessage`. In that type, a blob is a `Uint8Array`. The raw pane
+  holds JSON, where a blob is an array of numbers, and `encodeRaw` reads
+  that too.
 - `wasm-pack build --target web` makes an ES module that loads the
   `.wasm` through `new URL(…, import.meta.url)`, so Vite needs no plugin.
 - `src/main.ts` holds the panes, and `src/examples.ts` the samples.

@@ -9,23 +9,6 @@ import init, {
 } from '../pkg/scsynth_osc_wasm.js'
 import { examples, type Kind } from './examples.ts'
 
-/** The raw form of a message: its address, and its arguments in order. */
-interface RawMessage {
-  address: string
-  args: RawArg[]
-}
-
-type RawArg =
-  | { type: 'i' | 'f' | 'd'; data: number }
-  | { type: 'h'; data: number | bigint }
-  | { type: 's' | 'c'; data: string }
-  | { type: 'b'; data: Uint8Array | number[] }
-  | { type: 't'; data: { seconds: number; fraction: number } }
-  | { type: 'r'; data: { red: number; green: number; blue: number; alpha: number } }
-  | { type: 'm'; data: { port: number; status: number; data1: number; data2: number } }
-  | { type: 'T' | 'F' | 'N' | 'I' }
-  | RawArg[]
-
 type Pane = 'typed' | 'raw' | 'bytes'
 
 await init()
@@ -98,7 +81,7 @@ function bytesOf(pane: Pane): Uint8Array {
     case 'bytes':
       return parseHex(text)
     case 'raw':
-      return encodeRaw(JSON.parse(text) as RawMessage)
+      return encodeRaw(JSON.parse(text))
     case 'typed':
       return kind === 'command' ? encodeCommand(JSON.parse(text)) : encodeReply(JSON.parse(text))
   }
@@ -116,7 +99,7 @@ function edited(pane: Pane) {
   area(pane).classList.remove('stale')
   error(pane).textContent = ''
   if (pane !== 'bytes') fill('bytes', () => hex(bytes))
-  if (pane !== 'raw') fill('raw', () => json(decodeRaw(bytes) as RawMessage))
+  if (pane !== 'raw') fill('raw', () => json(decodeRaw(bytes)))
   if (pane !== 'typed') fill('typed', () => json(typed(bytes)))
 }
 

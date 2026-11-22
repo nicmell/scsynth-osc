@@ -202,6 +202,12 @@ fn raw_arg(value: &OscType) -> RawArg {
     }
 }
 
+/// The TypeScript declarations of [`RawMessage`] and [`RawArg`], as the
+/// JavaScript values that serde-wasm-bindgen writes. See
+/// [Features](crate#features).
+#[cfg(feature = "serde")]
+pub const RAW_TYPESCRIPT: &str = include_str!("raw.d.ts");
+
 /// The serde form of a [`RawArg`]: `{"type", "data"}`, with the OSC tag as
 /// the type, and an array as the sequence of its arguments.
 #[cfg(feature = "serde")]

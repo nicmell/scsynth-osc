@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 (2026-11-22)
+
+### Added
+
+- With the feature `serde`, `RAW_TYPESCRIPT`: the TypeScript declarations
+  of `RawMessage` and `RawArg`, as the JavaScript values that
+  serde-wasm-bindgen writes, for the `typescript_custom_section` of a
+  wasm-bindgen crate. See [Features](README.md#features).
+
 ## 0.2.0 (2026-11-08)
 
 ### Changed
