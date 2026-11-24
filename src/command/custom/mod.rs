@@ -12,7 +12,7 @@ mod synthdefs;
 mod tempo;
 
 pub use clock::ClockPing;
-pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt, Sample};
+pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
 pub use nodes::{LoadGroup, LoadSynth, Node};
 pub use states::SetState;
@@ -20,13 +20,12 @@ pub use streams::{Stream, StreamOpen};
 pub use synthdefs::{LoadSynthdef, Synthdef};
 pub use tempo::SetTempo;
 
-pub(crate) use dirt::read_sample;
 pub(crate) use nodes::read_id;
 pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 20] = [
+pub const ADDRESSES: [&str; 19] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
@@ -43,7 +42,6 @@ pub const ADDRESSES: [&str; 20] = [
     "/setState",
     "/getState",
     "/loadDirt",
-    "/loadSample",
     "/dirt.play",
     "/getTempo",
     "/setTempo",
@@ -126,11 +124,6 @@ mod tests {
             orbits: 1,
             out: 0,
         };
-        let sample = Sample {
-            plugin: other,
-            id: "a".to_owned(),
-            name: "bd".to_owned(),
-        };
         let sound = DirtPlay {
             plugin: other,
             id: "a".to_owned(),
@@ -156,7 +149,6 @@ mod tests {
             Command::SetState(state),
             Command::GetState(plugin),
             Command::LoadDirt(dirt),
-            Command::LoadSample(sample),
             Command::DirtPlay(sound),
             Command::GetTempo,
             Command::SetTempo(SetTempo { cps: 0.5 }),

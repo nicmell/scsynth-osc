@@ -5,7 +5,7 @@ use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleForm
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
 use scsynth_osc::command::custom::{
-    DirtParameter, DirtPlay, LoadDirt, LoadSynth, LoadSynthdef, Plugin, Sample, SetState, SetTempo,
+    DirtParameter, DirtPlay, LoadDirt, LoadSynth, LoadSynthdef, Plugin, SetState, SetTempo,
 };
 use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::SNew;
@@ -13,8 +13,7 @@ use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
 use scsynth_osc::reply::custom::{
-    NodeFailure, NodeLoaded, PluginFailure, SampleFailure, States, StreamFrames, SynthdefFailure,
-    Tempo,
+    NodeFailure, NodeLoaded, PluginFailure, States, StreamFrames, SynthdefFailure, Tempo,
 };
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
@@ -867,16 +866,6 @@ fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
         }}),
     );
     round_trip(
-        &Command::LoadSample(Sample {
-            plugin: uuid(plugin),
-            id: "5f0a3c9e21d47".to_owned(),
-            name: "bd".to_owned(),
-        }),
-        json!({"address": "/loadSample", "args": {
-            "plugin": plugin, "id": "5f0a3c9e21d47", "name": "bd"
-        }}),
-    );
-    round_trip(
         &Command::DirtPlay(DirtPlay {
             plugin: uuid(plugin),
             id: "5f0a3c9e21d47".to_owned(),
@@ -898,18 +887,6 @@ fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
                 {"name": "speed", "value": {"float": 1.5}},
                 {"name": "gain", "value": {"double": 0.75}}
             ]
-        }}),
-    );
-    round_trip(
-        &Reply::LoadSampleFailure(SampleFailure {
-            plugin: uuid(plugin),
-            id: "5f0a3c9e21d47".to_owned(),
-            name: "bd".to_owned(),
-            reason: "No samples of that name.".to_owned(),
-        }),
-        json!({"address": "/loadSample.failure", "args": {
-            "plugin": plugin, "id": "5f0a3c9e21d47", "name": "bd",
-            "reason": "No samples of that name."
         }}),
     );
     round_trip(

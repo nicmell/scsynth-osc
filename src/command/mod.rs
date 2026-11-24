@@ -208,9 +208,6 @@ messages! {
         /// `/loadDirt`: the pump starts a Dirt in the group of an element of
         /// the plugin.
         "/loadDirt" => LoadDirt(custom::LoadDirt),
-        /// `/loadSample`: the pump loads the samples of a sound into scsynth,
-        /// for the Dirt of an element of the plugin.
-        "/loadSample" => LoadSample(custom::Sample),
         /// `/dirt.play`: the pump plays a sound on the Dirt of an element of
         /// the plugin, at the time of its cycle on the tempo of the session.
         "/dirt.play" => DirtPlay(custom::DirtPlay),

@@ -12,7 +12,6 @@ mod synthdefs;
 mod tempo;
 
 pub use clock::{ClockPong, Tick};
-pub use dirt::{Sample, SampleFailure};
 pub use groups::{Plugin, PluginFailure, RootFailure};
 pub use nodes::{Node, NodeFailure, NodeLoaded};
 pub use states::States;

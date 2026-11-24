@@ -125,7 +125,6 @@ lists the addresses of the commands.
 | `/setState` | plugin, key, value | none |
 | `/getState` | plugin | `/getState.success plugin states`, `/getState.failure plugin reason` |
 | `/loadDirt` | plugin, id, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
-| `/loadSample` | plugin, id, name | `/loadSample.success plugin id name`, `/loadSample.failure plugin id name reason` |
 | `/dirt.play` | plugin, id, cycle, index, span, parameters | none, or `/dirt.play.failure plugin id reason` |
 | `/getTempo` | none | `/getTempo.success cps cycle server_ms` |
 | `/setTempo` | cps | none |
@@ -155,8 +154,6 @@ lists the addresses of the commands.
   `out` of `/loadDirt` are ints: the number of its orbits and the first of
   its output buses. The crate checks no range of them, and the pump
   refuses a bad value.
-- The `name` of `/loadSample` and of its answers names the samples of a
-  sound. It takes 1 to 255 bytes, and decoding refuses any other length.
 - `/dirt.play` carries a sound. `cycle` is the cycle of its start, and
   `span` its length in cycles, both as doubles. `index` counts the sounds
   of the element before it that start at the same cycle. It is an int of 0
@@ -263,9 +260,9 @@ The bytes of a value decode back to the value, except for these values:
 - A message of a node of the pump with an empty id, or a `LoadSynth`
   whose definition has an empty name or one longer than 255 bytes.
   Decoding refuses them.
-- A message of a Dirt of the pump with an empty id, or with a name of
-  samples that is empty or longer than 255 bytes, and a `DirtPlay` with a
-  negative index or a parameter with an empty name. Decoding refuses them.
+- A message of a Dirt of the pump with an empty id, and a `DirtPlay` with
+  a negative index or a parameter with an empty name. Decoding refuses
+  them.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
   variant. Its bytes decode as that variant, or do not decode.
 - A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and

@@ -1,6 +1,6 @@
 //! The commands of sc-app3's pump about the Dirt of an element of a
-//! plugin: the Dirt that the pump starts in the group of the element, the
-//! samples that it loads for the Dirt, and the sounds that it plays on it.
+//! plugin: the Dirt that the pump starts in the group of the element, and
+//! the sounds that it plays on it.
 
 use rosc::OscType;
 use uuid::Uuid;
@@ -9,9 +9,6 @@ use super::{read_id, read_uuid, write_uuid};
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
 use crate::raw::RawArg;
-
-/// The most bytes in the name of the samples of a sound.
-const MAX_SAMPLE: usize = 255;
 
 /// The arguments of `/loadDirt`: the Dirt of an element of a plugin, which
 /// plays in the group of the element.
@@ -42,36 +39,6 @@ impl Payload for LoadDirt {
             id: read_id(reader)?,
             orbits: reader.int()?,
             out: reader.int()?,
-        })
-    }
-}
-
-/// The arguments of `/loadSample`, and of its `.success`: the samples of a
-/// sound, for the Dirt of an element of a plugin.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Sample {
-    /// The plugin.
-    pub plugin: Uuid,
-    /// The id of the element. It cannot be empty.
-    pub id: String,
-    /// The name of the samples, as the `s` of a sound names them: 1 to 255
-    /// bytes.
-    pub name: String,
-}
-
-impl Payload for Sample {
-    fn write(&self, writer: &mut Writer) {
-        write_uuid(writer, self.plugin);
-        writer.string(&self.id);
-        writer.string(&self.name);
-    }
-
-    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        Ok(Self {
-            plugin: read_uuid(reader)?,
-            id: read_id(reader)?,
-            name: read_sample(reader)?,
         })
     }
 }
@@ -227,22 +194,6 @@ impl From<String> for DirtValue {
     }
 }
 
-/// The name of the samples of a sound: 1 to 255 bytes.
-pub(crate) fn read_sample(reader: &mut Reader<'_>) -> Result<String, DecodeError> {
-    let index = reader.index();
-    let name = reader.string()?;
-    if name.is_empty() || name.len() > MAX_SAMPLE {
-        return Err(reader.invalid(
-            index,
-            format!(
-                "a name of {} bytes, where the samples of a sound take 1 to {MAX_SAMPLE}",
-                name.len()
-            ),
-        ));
-    }
-    Ok(name)
-}
-
 /// The index of a sound among those that start at its cycle: 0 or more.
 fn read_index(reader: &mut Reader<'_>) -> Result<i32, DecodeError> {
     let at = reader.index();
@@ -264,7 +215,7 @@ mod tests {
     use super::*;
     use crate::Command;
     use crate::error::DecodeErrorKind;
-    use crate::testing::{assert_wire, decode, decode_error};
+    use crate::testing::{assert_wire, decode_error};
 
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
@@ -307,16 +258,6 @@ mod tests {
             "/loadDirt",
             vec![text(PLUGIN), text(ELEMENT), Int(2), Int(0)],
         );
-        let sample = Sample {
-            plugin: uuid(PLUGIN),
-            id: ELEMENT.to_owned(),
-            name: "bd".to_owned(),
-        };
-        assert_wire(
-            &Command::LoadSample(sample),
-            "/loadSample",
-            vec![text(PLUGIN), text(ELEMENT), text("bd")],
-        );
         let play = DirtPlay {
             plugin: uuid(PLUGIN),
             id: ELEMENT.to_owned(),
@@ -357,10 +298,9 @@ mod tests {
     }
 
     #[test]
-    fn an_id_is_not_empty_and_a_name_of_samples_takes_1_to_255_bytes() {
+    fn an_id_is_not_empty() {
         for (address, args) in [
             ("/loadDirt", vec![text(PLUGIN), text(""), Int(1), Int(0)]),
-            ("/loadSample", vec![text(PLUGIN), text(""), text("bd")]),
             (
                 "/dirt.play",
                 vec![text(PLUGIN), text(""), Double(4.0), Int(0), Double(0.5)],
@@ -372,24 +312,6 @@ mod tests {
                 "{address}: {kind:?}"
             );
         }
-        let sample = |name: &str| vec![text(PLUGIN), text("a"), text(name)];
-        for name in [String::new(), "n".repeat(256)] {
-            let kind = decode_error::<Command>("/loadSample", sample(&name));
-            assert!(
-                matches!(kind, DecodeErrorKind::Invalid { index: 2, .. }),
-                "{}: {kind:?}",
-                name.len()
-            );
-        }
-        let longest = "n".repeat(255);
-        assert_eq!(
-            decode::<Command>("/loadSample", sample(&longest)),
-            Command::LoadSample(Sample {
-                plugin: uuid(PLUGIN),
-                id: "a".to_owned(),
-                name: longest.clone(),
-            })
-        );
     }
 
     #[test]
