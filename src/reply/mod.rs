@@ -127,6 +127,9 @@ messages! {
         /// `/getState.failure`: the pump could not read the states of the
         /// plugin.
         "/getState.failure" => GetStateFailure(custom::PluginFailure),
+        /// `/control`: values of controls of the synth of an element of the
+        /// plugin, as scsynth holds them, to every page.
+        "/control" => Control(custom::Controls),
         /// `/loadDirt.success`: the Dirt of the element runs.
         "/loadDirt.success" => LoadDirtSuccess(custom::Node),
         /// `/loadDirt.failure`: the pump refused the start, or it failed.

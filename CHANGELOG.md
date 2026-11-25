@@ -49,6 +49,12 @@
   `/getTempo` carries the cycles per second, a cycle and its server time.
   `/setTempo` carries the cycles per second, and the pump sends
   `/tempoChange` with the new tempo to every page.
+- The controls of the synth of an element of a plugin: `/setControl`,
+  with controls as in `/loadSynth`, and `/getControl`, with ranges as in
+  `/s_getn`. Neither gets an answer of its own. The pump sends `/control`
+  to every page, with the ranges and the values of an `/n_setn` of
+  scsynth. An id cannot be empty, and each message carries one control or
+  more.
 
 ## 0.2.1 (2026-11-22)
 

@@ -205,6 +205,12 @@ messages! {
         /// `/getState`: the pump answers the values of the states of the
         /// elements of the plugin.
         "/getState" => GetState(custom::Plugin),
+        /// `/setControl`: the pump sets controls of the synth of an element
+        /// of the plugin, and answers nothing of its own.
+        "/setControl" => SetControl(custom::SetControl),
+        /// `/getControl`: the pump reads controls of the synth of an element
+        /// of the plugin, and answers nothing of its own.
+        "/getControl" => GetControl(custom::GetControl),
         /// `/loadDirt`: the pump starts a Dirt in the group of an element of
         /// the plugin.
         "/loadDirt" => LoadDirt(custom::LoadDirt),

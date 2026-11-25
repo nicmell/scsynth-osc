@@ -124,6 +124,8 @@ lists the addresses of the commands.
 | `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
 | `/setState` | plugin, key, value | none |
 | `/getState` | plugin | `/getState.success plugin states`, `/getState.failure plugin reason` |
+| `/setControl` | plugin, id, controls | none |
+| `/getControl` | plugin, id, ranges | none |
 | `/loadDirt` | plugin, id, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
 | `/dirt.play` | plugin, id, cycle, index, span, parameters | none, or `/dirt.play.failure plugin id reason` |
 | `/getTempo` | none | `/getTempo.success cps cycle server_ms` |
@@ -150,6 +152,14 @@ lists the addresses of the commands.
   does not read.
 - The `states` of `/getState.success` is the text of a JSON object from
   the key of each state to its value, which the crate does not read.
+- The `id` of `/setControl`, `/getControl` and `/control` is the id of the
+  element of a synth. Each of them carries one control or more, and
+  decoding refuses a message without one.
+- The controls of `/setControl` follow the rules of [Controls](#controls),
+  as in `/n_set`. The ranges of `/getControl` are those of `/s_getn`: a
+  control and a count each. The crate checks no count, as in `/s_getn`:
+  see [Traps](#traps). The ranges of `/control` are those of the `/n_setn`
+  that answers `/s_getn`: a control, a count and that many floats each.
 - A Dirt plays sounds of samples in the group of an element. `orbits` and
   `out` of `/loadDirt` are ints: the number of its orbits and the first of
   its output buses. The crate checks no range of them, and the pump
@@ -184,6 +194,9 @@ follow as a blob of little-endian `f32`, channels interleaved.
 
 The pages of a session get `/stateChange plugin` when the states of the
 plugin changed, and read them again with `/getState plugin`.
+
+The pages of a session get `/control plugin id ranges` with values of
+controls of the synth of an element, as scsynth holds them.
 
 When the tempo of a session changes, its pages get
 `/tempoChange cps cycle server_ms`, with the arguments of
@@ -263,6 +276,8 @@ The bytes of a value decode back to the value, except for these values:
 - A message of a Dirt of the pump with an empty id, and a `DirtPlay` with
   a negative index or a parameter with an empty name. Decoding refuses
   them.
+- A message of the controls of the pump with an empty id or without a
+  control. Decoding refuses them.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
   variant. Its bytes decode as that variant, or do not decode.
 - A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and

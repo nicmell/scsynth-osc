@@ -66,29 +66,38 @@ pub struct RangeReading {
     pub values: Vec<f32>,
 }
 
+impl RangeReading {
+    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        let control = Control::read(reader)?;
+        let count = reader.count()?;
+        let values = (0..count)
+            .map(|_| reader.float())
+            .collect::<Result<_, _>>()?;
+        Ok(Self { control, values })
+    }
+
+    pub(crate) fn write(&self, writer: &mut Writer) {
+        self.control.write(writer);
+        writer.count(self.values.len());
+        for value in &self.values {
+            writer.float(*value);
+        }
+    }
+}
+
 impl Payload for NSetn {
     fn write(&self, writer: &mut Writer) {
         self.node.write(writer);
         for reading in &self.ranges {
-            reading.control.write(writer);
-            writer.count(reading.values.len());
-            for value in &reading.values {
-                writer.float(*value);
-            }
+            reading.write(writer);
         }
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let node = NodeId::read(reader)?;
-        let ranges = reader.rest(|reader| {
-            let control = Control::read(reader)?;
-            let count = reader.count()?;
-            let values = (0..count)
-                .map(|_| reader.float())
-                .collect::<Result<_, _>>()?;
-            Ok(RangeReading { control, values })
-        })?;
-        Ok(Self { node, ranges })
+        Ok(Self {
+            node: NodeId::read(reader)?,
+            ranges: reader.rest(RangeReading::read)?,
+        })
     }
 }
 
