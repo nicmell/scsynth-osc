@@ -4,14 +4,16 @@
 use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleFormat};
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
-use scsynth_osc::command::custom::{LoadSynth, LoadSynthdef, Plugin, SetState};
+use scsynth_osc::command::custom::{
+    DirtParameter, DirtPlay, LoadDirt, LoadSynth, LoadSynthdef, Plugin, SetState, SetTempo,
+};
 use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
 use scsynth_osc::reply::custom::{
-    NodeLoaded, PluginFailure, States, StreamFrames, SynthdefFailure,
+    NodeFailure, NodeLoaded, PluginFailure, States, StreamFrames, SynthdefFailure, Tempo,
 };
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
@@ -845,5 +847,79 @@ fn a_state_of_the_pump_is_its_key_and_the_json_of_its_value() {
         json!({"address": "/getState.failure", "args": {
             "plugin": plugin, "reason": "No such plugin."
         }}),
+    );
+}
+
+#[test]
+fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
+    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
+    let uuid = |text: &str| text.parse().expect("a uuid");
+    round_trip(
+        &Command::LoadDirt(LoadDirt {
+            plugin: uuid(plugin),
+            id: "5f0a3c9e21d47".to_owned(),
+            orbits: 2,
+            out: 0,
+        }),
+        json!({"address": "/loadDirt", "args": {
+            "plugin": plugin, "id": "5f0a3c9e21d47", "orbits": 2, "out": 0
+        }}),
+    );
+    round_trip(
+        &Command::DirtPlay(DirtPlay {
+            plugin: uuid(plugin),
+            id: "5f0a3c9e21d47".to_owned(),
+            cycle: 12.25,
+            index: 1,
+            span: 0.25,
+            parameters: vec![
+                DirtParameter::new("s", "bd"),
+                DirtParameter::new("n", 3),
+                DirtParameter::new("speed", 1.5_f32),
+                DirtParameter::new("gain", 0.75),
+            ],
+        }),
+        json!({"address": "/dirt.play", "args": {
+            "plugin": plugin, "id": "5f0a3c9e21d47", "cycle": 12.25, "index": 1, "span": 0.25,
+            "parameters": [
+                {"name": "s", "value": {"string": "bd"}},
+                {"name": "n", "value": {"int": 3}},
+                {"name": "speed", "value": {"float": 1.5}},
+                {"name": "gain", "value": {"double": 0.75}}
+            ]
+        }}),
+    );
+    round_trip(
+        &Reply::DirtPlayFailure(NodeFailure {
+            plugin: uuid(plugin),
+            id: "5f0a3c9e21d47".to_owned(),
+            reason: "The sound came too late.".to_owned(),
+        }),
+        json!({"address": "/dirt.play.failure", "args": {
+            "plugin": plugin, "id": "5f0a3c9e21d47", "reason": "The sound came too late."
+        }}),
+    );
+}
+
+#[test]
+fn a_tempo_of_the_pump_is_its_cycles_per_second_and_a_point_in_time() {
+    round_trip(&Command::GetTempo, json!({"address": "/getTempo"}));
+    round_trip(
+        &Command::SetTempo(SetTempo { cps: 0.5625 }),
+        json!({"address": "/setTempo", "args": {"cps": 0.5625}}),
+    );
+    let tempo = Tempo {
+        cps: 0.5625,
+        cycle: 12.0,
+        server_ms: 1_792_605_767_324.5,
+    };
+    let args = json!({"cps": 0.5625, "cycle": 12.0, "server_ms": 1_792_605_767_324.5});
+    round_trip(
+        &Reply::GetTempoSuccess(tempo),
+        json!({"address": "/getTempo.success", "args": args}),
+    );
+    round_trip(
+        &Reply::TempoChange(tempo),
+        json!({"address": "/tempoChange", "args": args}),
     );
 }

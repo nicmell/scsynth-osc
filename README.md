@@ -124,6 +124,10 @@ lists the addresses of the commands.
 | `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
 | `/setState` | plugin, key, value | none |
 | `/getState` | plugin | `/getState.success plugin states`, `/getState.failure plugin reason` |
+| `/loadDirt` | plugin, id, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
+| `/dirt.play` | plugin, id, cycle, index, span, parameters | none, or `/dirt.play.failure plugin id reason` |
+| `/getTempo` | none | `/getTempo.success cps cycle server_ms` |
+| `/setTempo` | cps | none |
 
 - The messages name no session: the websocket of a page belongs to one
   session, which its URL names.
@@ -146,11 +150,28 @@ lists the addresses of the commands.
   does not read.
 - The `states` of `/getState.success` is the text of a JSON object from
   the key of each state to its value, which the crate does not read.
+- A Dirt plays sounds of samples in the group of an element. `orbits` and
+  `out` of `/loadDirt` are ints: the number of its orbits and the first of
+  its output buses. The crate checks no range of them, and the pump
+  refuses a bad value.
+- `/dirt.play` carries a sound. `cycle` is the cycle of its start, and
+  `span` its length in cycles, both as doubles. `index` counts the sounds
+  of the element before it that start at the same cycle. It is an int of 0
+  or more, and decoding refuses a negative one.
+- The arguments of `/dirt.play` after `span` are the parameters of the
+  sound, each as a name and then a value. The name is a string that cannot
+  be empty. The value is an int, a float, a double or a string, and keeps
+  its type. Decoding refuses an odd count of these arguments, an empty
+  name, and a name or a value of any other type.
 - `docs/protocol.md` of sc-app3 says what the pump does with them.
 - `/clock.ping` carries the time of the page as a double. `/clock.pong`
   echoes it, then carries server time as a double, in milliseconds since
   the Unix epoch. Then come the beat of the pump and the latency of the
   session, as ints of milliseconds.
+- `/setTempo` carries the cycles per second as a double. The crate checks
+  no range of it, and the pump refuses a bad value. `/getTempo.success`
+  and `/tempoChange` carry three doubles: the cycles per second, a cycle,
+  and the server time of that cycle, in milliseconds since the Unix epoch.
 
 The clock synth of an sc-app3 session sends `/tick` with `SendReply`,
 which scsynth sends to every registered client. It reads the node, the
@@ -163,6 +184,10 @@ follow as a blob of little-endian `f32`, channels interleaved.
 
 The pages of a session get `/stateChange plugin` when the states of the
 plugin changed, and read them again with `/getState plugin`.
+
+When the tempo of a session changes, its pages get
+`/tempoChange cps cycle server_ms`, with the arguments of
+`/getTempo.success`.
 
 ## Strictness
 
@@ -235,6 +260,9 @@ The bytes of a value decode back to the value, except for these values:
 - A message of a node of the pump with an empty id, or a `LoadSynth`
   whose definition has an empty name or one longer than 255 bytes.
   Decoding refuses them.
+- A message of a Dirt of the pump with an empty id, and a `DirtPlay` with
+  a negative index or a parameter with an empty name. Decoding refuses
+  them.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
   variant. Its bytes decode as that variant, or do not decode.
 - A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and

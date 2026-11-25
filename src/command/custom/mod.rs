@@ -3,25 +3,29 @@
 //! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
 
 mod clock;
+mod dirt;
 mod groups;
 mod nodes;
 mod states;
 mod streams;
 mod synthdefs;
+mod tempo;
 
 pub use clock::ClockPing;
+pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
 pub use nodes::{LoadGroup, LoadSynth, Node};
 pub use states::SetState;
 pub use streams::{Stream, StreamOpen};
 pub use synthdefs::{LoadSynthdef, Synthdef};
+pub use tempo::SetTempo;
 
 pub(crate) use nodes::read_id;
 pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 15] = [
+pub const ADDRESSES: [&str; 19] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
@@ -37,6 +41,10 @@ pub const ADDRESSES: [&str; 15] = [
     "/unloadSynth",
     "/setState",
     "/getState",
+    "/loadDirt",
+    "/dirt.play",
+    "/getTempo",
+    "/setTempo",
 ];
 
 use uuid::Uuid;
@@ -110,6 +118,20 @@ mod tests {
             key: "a".to_owned(),
             value: "1".to_owned(),
         };
+        let dirt = LoadDirt {
+            plugin: other,
+            id: "a".to_owned(),
+            orbits: 1,
+            out: 0,
+        };
+        let sound = DirtPlay {
+            plugin: other,
+            id: "a".to_owned(),
+            cycle: 0.0,
+            index: 0,
+            span: 1.0,
+            parameters: vec![DirtParameter::new("s", "bd")],
+        };
         let commands = [
             Command::LoadRoot,
             Command::UnloadRoot,
@@ -126,6 +148,10 @@ mod tests {
             Command::UnloadSynth(node),
             Command::SetState(state),
             Command::GetState(plugin),
+            Command::LoadDirt(dirt),
+            Command::DirtPlay(sound),
+            Command::GetTempo,
+            Command::SetTempo(SetTempo { cps: 0.5 }),
         ];
         assert_eq!(commands.map(|command| command.address()), ADDRESSES);
     }

@@ -127,5 +127,17 @@ messages! {
         /// `/getState.failure`: the pump could not read the states of the
         /// plugin.
         "/getState.failure" => GetStateFailure(custom::PluginFailure),
+        /// `/loadDirt.success`: the Dirt of the element runs.
+        "/loadDirt.success" => LoadDirtSuccess(custom::Node),
+        /// `/loadDirt.failure`: the pump refused the start, or it failed.
+        "/loadDirt.failure" => LoadDirtFailure(custom::NodeFailure),
+        /// `/dirt.play.failure`: the pump dropped a sound of the element.
+        "/dirt.play.failure" => DirtPlayFailure(custom::NodeFailure),
+        /// `/getTempo.success`: the tempo of the session, to the page that
+        /// asked.
+        "/getTempo.success" => GetTempoSuccess(custom::Tempo),
+        /// `/tempoChange`: the tempo of the session changed, and every page
+        /// gets the new one.
+        "/tempoChange" => TempoChange(custom::Tempo),
     }
 }

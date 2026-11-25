@@ -205,6 +205,17 @@ messages! {
         /// `/getState`: the pump answers the values of the states of the
         /// elements of the plugin.
         "/getState" => GetState(custom::Plugin),
+        /// `/loadDirt`: the pump starts a Dirt in the group of an element of
+        /// the plugin.
+        "/loadDirt" => LoadDirt(custom::LoadDirt),
+        /// `/dirt.play`: the pump plays a sound on the Dirt of an element of
+        /// the plugin, at the time of its cycle on the tempo of the session.
+        "/dirt.play" => DirtPlay(custom::DirtPlay),
+        /// `/getTempo`: the pump answers the tempo of the session.
+        "/getTempo" => GetTempo,
+        /// `/setTempo`: the pump sets the tempo of the session, and sends
+        /// `/tempoChange` to every page.
+        "/setTempo" => SetTempo(custom::SetTempo),
     }
 }
 

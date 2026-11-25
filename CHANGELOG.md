@@ -39,6 +39,16 @@
 - The read of the states of a plugin: `/getState`, whose `.success`
   carries the text of a JSON object from the key of each state to its
   value, and whose `.failure` carries a reason.
+- The Dirt of an element of a plugin: `/loadDirt`, and its `.success` and
+  `.failure` answers. `/loadDirt` carries the number of orbits and the
+  first output bus of the Dirt. `/dirt.play` carries a sound at a cycle,
+  with its index, its span and the pairs of its parameters. Its only
+  answer is `/dirt.play.failure`. An index is 0 or more, and the name of a
+  parameter cannot be empty.
+- The tempo of a session: `/getTempo` and `/setTempo`. The `.success` of
+  `/getTempo` carries the cycles per second, a cycle and its server time.
+  `/setTempo` carries the cycles per second, and the pump sends
+  `/tempoChange` with the new tempo to every page.
 
 ## 0.2.1 (2026-11-22)
 
