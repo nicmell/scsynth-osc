@@ -118,15 +118,6 @@ messages! {
         "/unloadSynth.failure" => UnloadSynthFailure(custom::NodeFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
-        /// `/stateChange`: the states of the plugin changed, and a page reads
-        /// them again.
-        "/stateChange" => StateChange(custom::Plugin),
-        /// `/getState.success`: the values of the states of the plugin, to
-        /// the page that asked.
-        "/getState.success" => GetStateSuccess(custom::States),
-        /// `/getState.failure`: the pump could not read the states of the
-        /// plugin.
-        "/getState.failure" => GetStateFailure(custom::PluginFailure),
         /// `/control`: values of controls of the synth of an element of the
         /// plugin, as scsynth holds them, to every page.
         "/control" => Control(custom::Controls),

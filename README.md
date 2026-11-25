@@ -122,8 +122,6 @@ lists the addresses of the commands.
 | `/loadSynth` | plugin, id, parent, def, controls | `/loadSynth.success plugin id node`, `/loadSynth.failure plugin id reason` |
 | `/unloadGroup` | plugin, id | `/unloadGroup.success plugin id`, `/unloadGroup.failure plugin id reason` |
 | `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
-| `/setState` | plugin, key, value | none |
-| `/getState` | plugin | `/getState.success plugin states`, `/getState.failure plugin reason` |
 | `/setControl` | plugin, id, controls | none |
 | `/getControl` | plugin, id, ranges | none |
 | `/loadDirt` | plugin, id, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
@@ -147,11 +145,6 @@ lists the addresses of the commands.
   plugin. `def` is the name of a synth definition.
 - The controls of `/loadSynth` follow the rules of [Controls](#controls),
   as in `/s_new`.
-- The `key` of `/setState` is the id of the element of a state, which
-  cannot be empty. Its `value` is the text of a JSON value, which the crate
-  does not read.
-- The `states` of `/getState.success` is the text of a JSON object from
-  the key of each state to its value, which the crate does not read.
 - The `id` of `/setControl`, `/getControl` and `/control` is the id of the
   element of a synth. Each of them carries one control or more, and
   decoding refuses a message without one.
@@ -191,9 +184,6 @@ block of the tick modulo 2^24.
 Each holder of a stream gets `/stream.frames`. It reads the stream, then
 the frame of the timeline of its first frame as a double. Its samples
 follow as a blob of little-endian `f32`, channels interleaved.
-
-The pages of a session get `/stateChange plugin` when the states of the
-plugin changed, and read them again with `/getState plugin`.
 
 The pages of a session get `/control plugin id ranges` with values of
 controls of the synth of an element, as scsynth holds them.

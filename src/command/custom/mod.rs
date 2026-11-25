@@ -7,7 +7,6 @@ mod controls;
 mod dirt;
 mod groups;
 mod nodes;
-mod states;
 mod streams;
 mod synthdefs;
 mod tempo;
@@ -17,7 +16,6 @@ pub use controls::{GetControl, SetControl};
 pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
 pub use nodes::{LoadGroup, LoadSynth, Node};
-pub use states::SetState;
 pub use streams::{Stream, StreamOpen};
 pub use synthdefs::{LoadSynthdef, Synthdef};
 pub use tempo::SetTempo;
@@ -28,7 +26,7 @@ pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 21] = [
+pub const ADDRESSES: [&str; 19] = [
     "/loadRoot",
     "/unloadRoot",
     "/loadPlugin",
@@ -42,8 +40,6 @@ pub const ADDRESSES: [&str; 21] = [
     "/loadSynth",
     "/unloadGroup",
     "/unloadSynth",
-    "/setState",
-    "/getState",
     "/setControl",
     "/getControl",
     "/loadDirt",
@@ -120,11 +116,6 @@ mod tests {
             plugin: other,
             id: "a".to_owned(),
         };
-        let state = SetState {
-            plugin: other,
-            key: "a".to_owned(),
-            value: "1".to_owned(),
-        };
         let set = SetControl {
             plugin: other,
             id: "b".to_owned(),
@@ -166,8 +157,6 @@ mod tests {
             Command::LoadSynth(synth),
             Command::UnloadGroup(node.clone()),
             Command::UnloadSynth(node),
-            Command::SetState(state),
-            Command::GetState(plugin),
             Command::SetControl(set),
             Command::GetControl(get),
             Command::LoadDirt(dirt),

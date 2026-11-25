@@ -6,7 +6,7 @@ use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, Wave
 use scsynth_osc::command::control_bus::CSet;
 use scsynth_osc::command::custom::{
     DirtParameter, DirtPlay, GetControl, LoadDirt, LoadSynth, LoadSynthdef, Plugin, SetControl,
-    SetState, SetTempo,
+    SetTempo,
 };
 use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::{RangeRequest, SNew};
@@ -14,7 +14,7 @@ use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
 use scsynth_osc::reply::custom::{
-    Controls, NodeFailure, NodeLoaded, PluginFailure, States, StreamFrames, SynthdefFailure, Tempo,
+    Controls, NodeFailure, NodeLoaded, PluginFailure, StreamFrames, SynthdefFailure, Tempo,
 };
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
@@ -801,53 +801,6 @@ fn a_node_of_the_pump_is_its_ids_and_its_controls() {
         }),
         json!({"address": "/loadSynth.success", "args": {
             "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_174_405
-        }}),
-    );
-}
-
-#[test]
-fn a_state_of_the_pump_is_its_key_and_the_json_of_its_value() {
-    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
-    let uuid = |text: &str| text.parse().expect("a uuid");
-    round_trip(
-        &Command::SetState(SetState {
-            plugin: uuid(plugin),
-            key: "c37dbff1fc4849b22e0d54edbe2fa1c6".to_owned(),
-            value: "330.0".to_owned(),
-        }),
-        json!({"address": "/setState", "args": {
-            "plugin": plugin,
-            "key": "c37dbff1fc4849b22e0d54edbe2fa1c6", "value": "330.0"
-        }}),
-    );
-    round_trip(
-        &Reply::StateChange(Plugin {
-            plugin: uuid(plugin),
-        }),
-        json!({"address": "/stateChange", "args": {"plugin": plugin}}),
-    );
-    round_trip(
-        &Command::GetState(Plugin {
-            plugin: uuid(plugin),
-        }),
-        json!({"address": "/getState", "args": {"plugin": plugin}}),
-    );
-    round_trip(
-        &Reply::GetStateSuccess(States {
-            plugin: uuid(plugin),
-            states: r#"{"c37dbff1fc4849b22e0d54edbe2fa1c6":330.0}"#.to_owned(),
-        }),
-        json!({"address": "/getState.success", "args": {
-            "plugin": plugin, "states": r#"{"c37dbff1fc4849b22e0d54edbe2fa1c6":330.0}"#
-        }}),
-    );
-    round_trip(
-        &Reply::GetStateFailure(PluginFailure {
-            plugin: uuid(plugin),
-            reason: "No such plugin.".to_owned(),
-        }),
-        json!({"address": "/getState.failure", "args": {
-            "plugin": plugin, "reason": "No such plugin."
         }}),
     );
 }

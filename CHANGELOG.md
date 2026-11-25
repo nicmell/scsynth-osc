@@ -32,13 +32,6 @@
   their `.failure` a reason. An id cannot be empty.
 - The unloads of those nodes: `/unloadGroup` and `/unloadSynth`, with the
   id of the element, and the `.success` and `.failure` answers of both.
-- The states of the elements of a plugin: `/setState`, with the id of the
-  element and the text of a JSON value, which gets no answer. The pump
-  sends `/stateChange` with the plugin when the states of the plugin
-  changed.
-- The read of the states of a plugin: `/getState`, whose `.success`
-  carries the text of a JSON object from the key of each state to its
-  value, and whose `.failure` carries a reason.
 - The Dirt of an element of a plugin: `/loadDirt`, and its `.success` and
   `.failure` answers. `/loadDirt` carries the number of orbits and the
   first output bus of the Dirt. `/dirt.play` carries a sound at a cycle,

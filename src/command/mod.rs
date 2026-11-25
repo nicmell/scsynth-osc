@@ -199,12 +199,6 @@ messages! {
         /// `/unloadSynth`: the pump releases the page's hold on the synth of
         /// an element of the plugin, and frees it once nobody holds it.
         "/unloadSynth" => UnloadSynth(custom::Node),
-        /// `/setState`: the pump keeps the value of a state of an element of
-        /// the plugin, and answers nothing.
-        "/setState" => SetState(custom::SetState),
-        /// `/getState`: the pump answers the values of the states of the
-        /// elements of the plugin.
-        "/getState" => GetState(custom::Plugin),
         /// `/setControl`: the pump sets controls of the synth of an element
         /// of the plugin, and answers nothing of its own.
         "/setControl" => SetControl(custom::SetControl),
