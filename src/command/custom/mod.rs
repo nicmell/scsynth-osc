@@ -3,23 +3,24 @@
 //! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
 
 mod clock;
+mod controls;
 mod dirt;
 mod groups;
 mod nodes;
-mod states;
 mod streams;
 mod synthdefs;
 mod tempo;
 
 pub use clock::ClockPing;
+pub use controls::{GetControl, SetControl};
 pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
 pub use nodes::{LoadGroup, LoadSynth, Node};
-pub use states::SetState;
 pub use streams::{Stream, StreamOpen};
 pub use synthdefs::{LoadSynthdef, Synthdef};
 pub use tempo::SetTempo;
 
+pub(crate) use controls::read_controls;
 pub(crate) use nodes::read_id;
 pub(crate) use synthdefs::read_name;
 
@@ -39,8 +40,8 @@ pub const ADDRESSES: [&str; 19] = [
     "/loadSynth",
     "/unloadGroup",
     "/unloadSynth",
-    "/setState",
-    "/getState",
+    "/setControl",
+    "/getControl",
     "/loadDirt",
     "/dirt.play",
     "/getTempo",
@@ -77,6 +78,8 @@ mod tests {
 
     use super::*;
     use crate::Command;
+    use crate::command::synth::RangeRequest;
+    use crate::types::{Control, ControlSetting};
 
     #[test]
     fn the_addresses_of_the_pump_are_those_of_its_commands() {
@@ -113,10 +116,18 @@ mod tests {
             plugin: other,
             id: "a".to_owned(),
         };
-        let state = SetState {
+        let set = SetControl {
             plugin: other,
-            key: "a".to_owned(),
-            value: "1".to_owned(),
+            id: "b".to_owned(),
+            controls: vec![ControlSetting::new("freq", 1.0)],
+        };
+        let get = GetControl {
+            plugin: other,
+            id: "b".to_owned(),
+            controls: vec![RangeRequest {
+                control: Control::from("freq"),
+                count: 1,
+            }],
         };
         let dirt = LoadDirt {
             plugin: other,
@@ -146,8 +157,8 @@ mod tests {
             Command::LoadSynth(synth),
             Command::UnloadGroup(node.clone()),
             Command::UnloadSynth(node),
-            Command::SetState(state),
-            Command::GetState(plugin),
+            Command::SetControl(set),
+            Command::GetControl(get),
             Command::LoadDirt(dirt),
             Command::DirtPlay(sound),
             Command::GetTempo,

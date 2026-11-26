@@ -96,24 +96,33 @@ pub struct RangeRequest {
     pub count: i32,
 }
 
+impl RangeRequest {
+    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            control: Control::read(reader)?,
+            count: reader.int()?,
+        })
+    }
+
+    pub(crate) fn write(&self, writer: &mut Writer) {
+        self.control.write(writer);
+        writer.int(self.count);
+    }
+}
+
 impl Payload for SGetn {
     fn write(&self, writer: &mut Writer) {
         self.synth.write(writer);
         for range in &self.ranges {
-            range.control.write(writer);
-            writer.int(range.count);
+            range.write(writer);
         }
     }
 
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        let synth = NodeId::read(reader)?;
-        let ranges = reader.rest(|reader| {
-            Ok(RangeRequest {
-                control: Control::read(reader)?,
-                count: reader.int()?,
-            })
-        })?;
-        Ok(Self { synth, ranges })
+        Ok(Self {
+            synth: NodeId::read(reader)?,
+            ranges: reader.rest(RangeRequest::read)?,
+        })
     }
 }
 
