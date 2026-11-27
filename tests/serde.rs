@@ -13,7 +13,7 @@ use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
 use scsynth_osc::reply::custom::{
-    NodeFailure, NodeLoaded, PluginFailure, StreamFrames, SynthdefFailure, Tempo,
+    DirtFailure, NodeLoaded, PluginFailure, StreamFrames, SynthdefFailure, Tempo,
 };
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
@@ -804,25 +804,25 @@ fn a_node_of_the_pump_is_its_ids_and_its_controls() {
 }
 
 #[test]
-fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
+fn a_dirt_of_the_pump_is_the_node_of_its_group_and_a_sound_its_typed_parameters() {
     let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
     let uuid = |text: &str| text.parse().expect("a uuid");
     round_trip(
         &Command::LoadDirt(LoadDirt {
             plugin: uuid(plugin),
-            id: "5f0a3c9e21d47".to_owned(),
+            node: 67_240_961,
             block: 0,
             orbits: 2,
             out: 0,
         }),
         json!({"address": "/loadDirt", "args": {
-            "plugin": plugin, "id": "5f0a3c9e21d47", "block": 0, "orbits": 2, "out": 0
+            "plugin": plugin, "node": 67_240_961, "block": 0, "orbits": 2, "out": 0
         }}),
     );
     round_trip(
         &Command::DirtPlay(DirtPlay {
             plugin: uuid(plugin),
-            id: "5f0a3c9e21d47".to_owned(),
+            node: 67_240_961,
             cycle: 12.25,
             index: 1,
             span: 0.25,
@@ -834,7 +834,7 @@ fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
             ],
         }),
         json!({"address": "/dirt.play", "args": {
-            "plugin": plugin, "id": "5f0a3c9e21d47", "cycle": 12.25, "index": 1, "span": 0.25,
+            "plugin": plugin, "node": 67_240_961, "cycle": 12.25, "index": 1, "span": 0.25,
             "parameters": [
                 {"name": "s", "value": {"string": "bd"}},
                 {"name": "n", "value": {"int": 3}},
@@ -844,13 +844,13 @@ fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
         }}),
     );
     round_trip(
-        &Reply::DirtPlayFailure(NodeFailure {
+        &Reply::DirtPlayFailure(DirtFailure {
             plugin: uuid(plugin),
-            id: "5f0a3c9e21d47".to_owned(),
+            node: NodeId(67_240_961),
             reason: "The sound came too late.".to_owned(),
         }),
         json!({"address": "/dirt.play.failure", "args": {
-            "plugin": plugin, "id": "5f0a3c9e21d47", "reason": "The sound came too late."
+            "plugin": plugin, "node": 67_240_961, "reason": "The sound came too late."
         }}),
     );
 }

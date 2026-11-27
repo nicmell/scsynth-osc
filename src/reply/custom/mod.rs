@@ -11,6 +11,7 @@ mod synthdefs;
 mod tempo;
 
 pub use clock::{ClockPong, Tick};
+pub use dirt::{Dirt, DirtFailure};
 pub use groups::{Plugin, PluginFailure};
 pub use nodes::{Node, NodeFailure, NodeLoaded};
 pub use streams::{StreamFailure, StreamFrames, StreamOpened};

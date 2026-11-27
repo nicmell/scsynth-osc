@@ -10,6 +10,10 @@
 - The page gives the node ids of the elements: `/loadGroup` and
   `/loadSynth` carry a `node` after the id of the element, and `/loadDirt`
   carries a `block` of node ids after it.
+- The messages of a Dirt name the group of its element by its node, in
+  place of the id of the element: `/loadDirt`, `/dirt.play` and their
+  answers, whose types are `reply::custom::Dirt` and
+  `reply::custom::DirtFailure`.
 
 ### Added
 

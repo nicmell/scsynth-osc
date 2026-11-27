@@ -111,14 +111,14 @@ mod tests {
         };
         let dirt = LoadDirt {
             plugin: other,
-            id: "a".to_owned(),
+            node: 2,
             block: 0,
             orbits: 1,
             out: 0,
         };
         let sound = DirtPlay {
             plugin: other,
-            id: "a".to_owned(),
+            node: 2,
             cycle: 0.0,
             index: 0,
             span: 1.0,

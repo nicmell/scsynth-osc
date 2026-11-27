@@ -111,11 +111,11 @@ messages! {
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
         /// `/loadDirt.success`: the Dirt of the element runs.
-        "/loadDirt.success" => LoadDirtSuccess(custom::Node),
+        "/loadDirt.success" => LoadDirtSuccess(custom::Dirt),
         /// `/loadDirt.failure`: the pump refused the start, or it failed.
-        "/loadDirt.failure" => LoadDirtFailure(custom::NodeFailure),
+        "/loadDirt.failure" => LoadDirtFailure(custom::DirtFailure),
         /// `/dirt.play.failure`: the pump dropped a sound of the element.
-        "/dirt.play.failure" => DirtPlayFailure(custom::NodeFailure),
+        "/dirt.play.failure" => DirtPlayFailure(custom::DirtFailure),
         /// `/getTempo.success`: the tempo of the session, to the page that
         /// asked.
         "/getTempo.success" => GetTempoSuccess(custom::Tempo),
