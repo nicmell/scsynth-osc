@@ -3,7 +3,6 @@
 //! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
 
 mod clock;
-mod controls;
 mod dirt;
 mod groups;
 mod nodes;
@@ -12,7 +11,6 @@ mod synthdefs;
 mod tempo;
 
 pub use clock::ClockPing;
-pub use controls::{GetControl, SetControl};
 pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
 pub use nodes::{LoadGroup, LoadSynth, Node};
@@ -20,13 +18,12 @@ pub use streams::{Stream, StreamOpen};
 pub use synthdefs::{LoadSynthdef, Synthdef};
 pub use tempo::SetTempo;
 
-pub(crate) use controls::read_controls;
 pub(crate) use nodes::read_id;
 pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 17] = [
+pub const ADDRESSES: [&str; 15] = [
     "/loadPlugin",
     "/unloadPlugin",
     "/clock.ping",
@@ -38,8 +35,6 @@ pub const ADDRESSES: [&str; 17] = [
     "/loadSynth",
     "/unloadGroup",
     "/unloadSynth",
-    "/setControl",
-    "/getControl",
     "/loadDirt",
     "/dirt.play",
     "/getTempo",
@@ -76,8 +71,6 @@ mod tests {
 
     use super::*;
     use crate::Command;
-    use crate::command::synth::RangeRequest;
-    use crate::types::{Control, ControlSetting};
 
     #[test]
     fn the_addresses_of_the_pump_are_those_of_its_commands() {
@@ -116,19 +109,6 @@ mod tests {
             plugin: other,
             id: "a".to_owned(),
         };
-        let set = SetControl {
-            plugin: other,
-            id: "b".to_owned(),
-            controls: vec![ControlSetting::new("freq", 1.0)],
-        };
-        let get = GetControl {
-            plugin: other,
-            id: "b".to_owned(),
-            controls: vec![RangeRequest {
-                control: Control::from("freq"),
-                count: 1,
-            }],
-        };
         let dirt = LoadDirt {
             plugin: other,
             id: "a".to_owned(),
@@ -156,8 +136,6 @@ mod tests {
             Command::LoadSynth(synth),
             Command::UnloadGroup(node.clone()),
             Command::UnloadSynth(node),
-            Command::SetControl(set),
-            Command::GetControl(get),
             Command::LoadDirt(dirt),
             Command::DirtPlay(sound),
             Command::GetTempo,

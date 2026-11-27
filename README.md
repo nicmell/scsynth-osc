@@ -120,8 +120,6 @@ lists the addresses of the commands.
 | `/loadSynth` | plugin, id, node, parent, def, controls | `/loadSynth.success plugin id node`, `/loadSynth.failure plugin id reason` |
 | `/unloadGroup` | plugin, id | `/unloadGroup.success plugin id`, `/unloadGroup.failure plugin id reason` |
 | `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
-| `/setControl` | plugin, id, controls | none |
-| `/getControl` | plugin, id, ranges | none |
 | `/loadDirt` | plugin, id, block, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
 | `/dirt.play` | plugin, id, cycle, index, span, parameters | none, or `/dirt.play.failure plugin id reason` |
 | `/getTempo` | none | `/getTempo.success cps cycle server_ms` |
@@ -146,14 +144,6 @@ lists the addresses of the commands.
   definition.
 - The controls of `/loadSynth` follow the rules of [Controls](#controls),
   as in `/s_new`.
-- The `id` of `/setControl`, `/getControl` and `/control` is the id of the
-  element of a synth. Each of them carries one control or more, and
-  decoding refuses a message without one.
-- The controls of `/setControl` follow the rules of [Controls](#controls),
-  as in `/n_set`. The ranges of `/getControl` are those of `/s_getn`: a
-  control and a count each. The crate checks no count, as in `/s_getn`:
-  see [Traps](#traps). The ranges of `/control` are those of the `/n_setn`
-  that answers `/s_getn`: a control, a count and that many floats each.
 - A Dirt plays sounds of samples in the group of an element. `block`,
   `orbits` and `out` of `/loadDirt` are ints: the block of node ids that
   the page gives the Dirt, the number of its orbits, and the first of its
@@ -186,9 +176,6 @@ block of the tick modulo 2^24.
 Each holder of a stream gets `/stream.frames`. It reads the stream, then
 the frame of the timeline of its first frame as a double. Its samples
 follow as a blob of little-endian `f32`, channels interleaved.
-
-The pages of a session get `/control plugin id ranges` with values of
-controls of the synth of an element, as scsynth holds them.
 
 When the tempo of a session changes, its pages get
 `/tempoChange cps cycle server_ms`, with the arguments of
@@ -268,8 +255,6 @@ The bytes of a value decode back to the value, except for these values:
 - A message of a Dirt of the pump with an empty id, and a `DirtPlay` with
   a negative index or a parameter with an empty name. Decoding refuses
   them.
-- A message of the controls of the pump with an empty id or without a
-  control. Decoding refuses them.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another
   variant. Its bytes decode as that variant, or do not decode.
 - A `NodeState` with `Some(NodeId(-1))`. -1 travels for no node, and

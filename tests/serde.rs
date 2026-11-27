@@ -5,22 +5,20 @@ use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleForm
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
 use scsynth_osc::command::custom::{
-    DirtParameter, DirtPlay, GetControl, LoadDirt, LoadSynth, LoadSynthdef, Plugin, SetControl,
-    SetTempo,
+    DirtParameter, DirtPlay, LoadDirt, LoadSynth, LoadSynthdef, Plugin, SetTempo,
 };
 use scsynth_osc::command::node::NOrder;
-use scsynth_osc::command::synth::{RangeRequest, SNew};
+use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
 use scsynth_osc::reply::custom::{
-    Controls, NodeFailure, NodeLoaded, PluginFailure, StreamFrames, SynthdefFailure, Tempo,
+    NodeFailure, NodeLoaded, PluginFailure, StreamFrames, SynthdefFailure, Tempo,
 };
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
 use scsynth_osc::reply::node_notification::{NodeKind, NodeState};
-use scsynth_osc::reply::synth::RangeReading;
 use scsynth_osc::reply::top_level::StatusReply;
 use scsynth_osc::reply::trigger::Tr;
 use scsynth_osc::{
@@ -801,59 +799,6 @@ fn a_node_of_the_pump_is_its_ids_and_its_controls() {
         }),
         json!({"address": "/loadSynth.success", "args": {
             "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_239_937
-        }}),
-    );
-}
-
-#[test]
-fn a_control_of_the_pump_is_its_element_and_its_ranges() {
-    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
-    let uuid = |text: &str| text.parse().expect("a uuid");
-    round_trip(
-        &Command::SetControl(SetControl {
-            plugin: uuid(plugin),
-            id: "1bcdb1b42939e3".to_owned(),
-            controls: vec![
-                ControlSetting::new("freq", 330.0),
-                ControlSetting::new(
-                    "amps",
-                    ControlValue::Array(vec![ArrayElement::Float(0.5), ArrayElement::Float(0.25)]),
-                ),
-            ],
-        }),
-        json!({"address": "/setControl", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3", "controls": [
-                {"control": "freq", "value": 330.0},
-                {"control": "amps", "value": [0.5, 0.25]}
-            ]
-        }}),
-    );
-    round_trip(
-        &Command::GetControl(GetControl {
-            plugin: uuid(plugin),
-            id: "1bcdb1b42939e3".to_owned(),
-            controls: vec![RangeRequest {
-                control: Control::from("amps"),
-                count: 2,
-            }],
-        }),
-        json!({"address": "/getControl", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3",
-            "controls": [{"control": "amps", "count": 2}]
-        }}),
-    );
-    round_trip(
-        &Reply::Control(Controls {
-            plugin: uuid(plugin),
-            id: "1bcdb1b42939e3".to_owned(),
-            controls: vec![RangeReading {
-                control: Control::from("amps"),
-                values: vec![0.5, 0.25],
-            }],
-        }),
-        json!({"address": "/control", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3",
-            "controls": [{"control": "amps", "values": [0.5, 0.25]}]
         }}),
     );
 }
