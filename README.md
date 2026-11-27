@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadRoot` `/unloadRoot` `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` `/loadGroup` `/loadSynth` `/unloadGroup` `/unloadSynth` | `/loadRoot.success` `/loadRoot.failure` `/unloadRoot.success` `/unloadRoot.failure` `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/loadGroup.success` `/loadGroup.failure` `/loadSynth.success` `/loadSynth.failure` `/unloadGroup.success` `/unloadGroup.failure` `/unloadSynth.success` `/unloadSynth.failure` `/tick` |
+| sc-app3's pump | `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` `/loadGroup` `/loadSynth` `/unloadGroup` `/unloadSynth` | `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/loadGroup.success` `/loadGroup.failure` `/loadSynth.success` `/loadSynth.failure` `/unloadGroup.success` `/unloadGroup.failure` `/unloadSynth.success` `/unloadSynth.failure` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -109,8 +109,6 @@ lists the addresses of the commands.
 
 | Command | Args | Answers |
 | --- | --- | --- |
-| `/loadRoot` | none | `/loadRoot.success`, `/loadRoot.failure reason` |
-| `/unloadRoot` | none | `/unloadRoot.success`, `/unloadRoot.failure reason` |
 | `/loadPlugin` | plugin | `/loadPlugin.success plugin`, `/loadPlugin.failure plugin reason` |
 | `/unloadPlugin` | plugin | `/unloadPlugin.success plugin`, `/unloadPlugin.failure plugin reason` |
 | `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms beat_ms latency_ms` |

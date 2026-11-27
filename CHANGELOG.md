@@ -49,6 +49,12 @@
   scsynth. An id cannot be empty, and each message carries one control or
   more.
 
+### Removed
+
+- `/loadRoot`, `/unloadRoot`, their four answers and `RootFailure`: the
+  pump of sc-app3 keeps the root group of its session by itself.
+  `command::custom::ADDRESSES` lists 17 addresses.
+
 ## 0.2.1 (2026-11-22)
 
 ### Added

@@ -713,7 +713,6 @@ fn a_raw_message_is_its_address_and_its_typed_args() {
 fn a_message_of_the_pump_names_its_uuids() {
     let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
     let uuid = |text: &str| text.parse().expect("a uuid");
-    round_trip(&Command::LoadRoot, json!({"address": "/loadRoot"}));
     round_trip(
         &Command::UnloadPlugin(Plugin {
             plugin: uuid(plugin),

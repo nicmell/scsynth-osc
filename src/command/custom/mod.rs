@@ -26,9 +26,7 @@ pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 19] = [
-    "/loadRoot",
-    "/unloadRoot",
+pub const ADDRESSES: [&str; 17] = [
     "/loadPlugin",
     "/unloadPlugin",
     "/clock.ping",
@@ -144,8 +142,6 @@ mod tests {
             parameters: vec![DirtParameter::new("s", "bd")],
         };
         let commands = [
-            Command::LoadRoot,
-            Command::UnloadRoot,
             Command::LoadPlugin(plugin),
             Command::UnloadPlugin(plugin),
             Command::ClockPing(ClockPing { sent_ms: 0.0 }),

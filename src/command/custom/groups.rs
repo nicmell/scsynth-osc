@@ -1,5 +1,5 @@
-//! The commands of sc-app3's pump about the groups of a session: its root
-//! group, and the group of each of its plugins.
+//! The commands of sc-app3's pump about the group of each plugin of a
+//! session.
 
 use uuid::Uuid;
 
@@ -50,8 +50,6 @@ mod tests {
 
     #[test]
     fn the_commands_of_the_pump_have_their_wire_form() {
-        assert_wire(&Command::LoadRoot, "/loadRoot", vec![]);
-        assert_wire(&Command::UnloadRoot, "/unloadRoot", vec![]);
         let plugin = Plugin {
             plugin: uuid(PLUGIN),
         };

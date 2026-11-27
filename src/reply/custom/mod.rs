@@ -13,7 +13,7 @@ mod tempo;
 
 pub use clock::{ClockPong, Tick};
 pub use controls::Controls;
-pub use groups::{Plugin, PluginFailure, RootFailure};
+pub use groups::{Plugin, PluginFailure};
 pub use nodes::{Node, NodeFailure, NodeLoaded};
 pub use streams::{StreamFailure, StreamFrames, StreamOpened};
 pub use synthdefs::{Synthdef, SynthdefFailure};

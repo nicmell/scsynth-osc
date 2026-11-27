@@ -66,14 +66,6 @@ messages! {
         "/c_setn" => CSetn(control_bus::CSetn),
         /// `/tr`: a `SendTrig` unit generator triggered.
         "/tr" => Tr(trigger::Tr),
-        /// `/loadRoot.success`: the root group is ready.
-        "/loadRoot.success" => LoadRootSuccess,
-        /// `/loadRoot.failure`: the pump refused the load, or it failed.
-        "/loadRoot.failure" => LoadRootFailure(custom::RootFailure),
-        /// `/unloadRoot.success`: the root group is free.
-        "/unloadRoot.success" => UnloadRootSuccess,
-        /// `/unloadRoot.failure`: the pump refused the unload, or it failed.
-        "/unloadRoot.failure" => UnloadRootFailure(custom::RootFailure),
         /// `/loadPlugin.success`: the group of the plugin is ready.
         "/loadPlugin.success" => LoadPluginSuccess(custom::Plugin),
         /// `/loadPlugin.failure`: the pump refused the load, or it failed.
