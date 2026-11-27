@@ -7,9 +7,8 @@
 - The messages of sc-app3's pump name no session, because the websocket of
   a page belongs to one session. `/loadRoot`, `/unloadRoot` and their
   `.success` answers take no argument.
-- The page gives the node ids of the elements: `/loadGroup` and
-  `/loadSynth` carry a `node` after the id of the element, and `/loadDirt`
-  carries a `block` of node ids after it.
+- The page gives the node ids of a Dirt: `/loadDirt` carries a `block` of
+  node ids.
 - The messages of a Dirt name the group of its element by its node, in
   place of the id of the element: `/loadDirt`, `/dirt.play` and their
   answers, whose types are `reply::custom::Dirt` and
@@ -29,16 +28,6 @@
 - The streams of a session: `/stream.open`, `/stream.close` and the
   answers of an open. `/stream.frames` carries the frames of a stream, as
   a blob of little-endian `f32`.
-- The synth definitions of a page: `/loadSynthdef` with the bytes of a
-  synth definition file, `/unloadSynthdef`, and the `.success` and
-  `.failure` answers of both, which name the definition. A name takes 1 to
-  255 bytes, and the bytes cannot be empty.
-- The nodes of the elements of a plugin: `/loadGroup` and `/loadSynth`,
-  with the id of the element and the id of its parent, and for a synth its
-  definition and its controls. Their `.success` carries the node, and
-  their `.failure` a reason. An id cannot be empty.
-- The unloads of those nodes: `/unloadGroup` and `/unloadSynth`, with the
-  id of the element, and the `.success` and `.failure` answers of both.
 - The Dirt of an element of a plugin: `/loadDirt`, and its `.success` and
   `.failure` answers. `/loadDirt` carries the number of orbits and the
   first output bus of the Dirt. `/dirt.play` carries a sound at a cycle,

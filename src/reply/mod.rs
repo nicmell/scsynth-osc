@@ -84,30 +84,6 @@ messages! {
         "/stream.open.failure" => StreamOpenFailure(custom::StreamFailure),
         /// `/stream.frames`: frames of a stream, for each of its holders.
         "/stream.frames" => StreamFrames(custom::StreamFrames),
-        /// `/loadSynthdef.success`: the synth definition is in scsynth.
-        "/loadSynthdef.success" => LoadSynthdefSuccess(custom::Synthdef),
-        /// `/loadSynthdef.failure`: the pump refused the load, or it failed.
-        "/loadSynthdef.failure" => LoadSynthdefFailure(custom::SynthdefFailure),
-        /// `/unloadSynthdef.success`: the synth definition is free.
-        "/unloadSynthdef.success" => UnloadSynthdefSuccess(custom::Synthdef),
-        /// `/unloadSynthdef.failure`: the pump refused the free, or it failed.
-        "/unloadSynthdef.failure" => UnloadSynthdefFailure(custom::SynthdefFailure),
-        /// `/loadGroup.success`: the group of the element is in scsynth.
-        "/loadGroup.success" => LoadGroupSuccess(custom::NodeLoaded),
-        /// `/loadGroup.failure`: the pump refused the load, or it failed.
-        "/loadGroup.failure" => LoadGroupFailure(custom::NodeFailure),
-        /// `/loadSynth.success`: the synth of the element is in scsynth.
-        "/loadSynth.success" => LoadSynthSuccess(custom::NodeLoaded),
-        /// `/loadSynth.failure`: the pump refused the load, or it failed.
-        "/loadSynth.failure" => LoadSynthFailure(custom::NodeFailure),
-        /// `/unloadGroup.success`: the group of the element is free.
-        "/unloadGroup.success" => UnloadGroupSuccess(custom::Node),
-        /// `/unloadGroup.failure`: the pump refused the unload, or it failed.
-        "/unloadGroup.failure" => UnloadGroupFailure(custom::NodeFailure),
-        /// `/unloadSynth.success`: the synth of the element is free.
-        "/unloadSynth.success" => UnloadSynthSuccess(custom::Node),
-        /// `/unloadSynth.failure`: the pump refused the unload, or it failed.
-        "/unloadSynth.failure" => UnloadSynthFailure(custom::NodeFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
         /// `/loadDirt.success`: the Dirt of the element runs.

@@ -52,7 +52,7 @@ follow the sections of the reference.
 | Node notifications | | `/n_go` `/n_end` `/n_off` `/n_on` `/n_move` `/n_info` |
 | Trigger notifications | | `/tr` |
 | Buffer fills of `/b_gen` | `sine1` `sine2` `sine3` `cheby` `copy` | |
-| sc-app3's pump | `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` `/loadSynthdef` `/unloadSynthdef` `/loadGroup` `/loadSynth` `/unloadGroup` `/unloadSynth` | `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/loadSynthdef.success` `/loadSynthdef.failure` `/unloadSynthdef.success` `/unloadSynthdef.failure` `/loadGroup.success` `/loadGroup.failure` `/loadSynth.success` `/loadSynth.failure` `/unloadGroup.success` `/unloadGroup.failure` `/unloadSynth.success` `/unloadSynth.failure` `/tick` |
+| sc-app3's pump | `/loadPlugin` `/unloadPlugin` `/clock.ping` `/stream.open` `/stream.close` | `/loadPlugin.success` `/loadPlugin.failure` `/unloadPlugin.success` `/unloadPlugin.failure` `/clock.pong` `/stream.open.success` `/stream.open.failure` `/stream.frames` `/tick` |
 
 A command without arguments is a unit variant, such as `Command::Quit`.
 The arguments of any other message are a type of its section, named after
@@ -114,12 +114,6 @@ lists the addresses of the commands.
 | `/clock.ping` | a time of the page | `/clock.pong sent_ms server_ms beat_ms latency_ms` |
 | `/stream.open` | stream, bus, channels | `/stream.open.success stream channels`, `/stream.open.failure stream reason` |
 | `/stream.close` | stream | none |
-| `/loadSynthdef` | plugin, name, data | `/loadSynthdef.success plugin name`, `/loadSynthdef.failure plugin name reason` |
-| `/unloadSynthdef` | plugin, name | `/unloadSynthdef.success plugin name`, `/unloadSynthdef.failure plugin name reason` |
-| `/loadGroup` | plugin, id, node, parent | `/loadGroup.success plugin id node`, `/loadGroup.failure plugin id reason` |
-| `/loadSynth` | plugin, id, node, parent, def, controls | `/loadSynth.success plugin id node`, `/loadSynth.failure plugin id reason` |
-| `/unloadGroup` | plugin, id | `/unloadGroup.success plugin id`, `/unloadGroup.failure plugin id reason` |
-| `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
 | `/loadDirt` | plugin, node, block, orbits, out | `/loadDirt.success plugin node`, `/loadDirt.failure plugin node reason` |
 | `/dirt.play` | plugin, node, cycle, index, span, parameters | none, or `/dirt.play.failure plugin node reason` |
 | `/getTempo` | none | `/getTempo.success cps cycle server_ms` |
@@ -129,21 +123,6 @@ lists the addresses of the commands.
   session, which its URL names.
 - A plugin or a stream is a `uuid::Uuid`. It travels as an OSC string,
   in lowercase with hyphens, and decoding refuses any other form.
-- The name of a synth definition takes 1 to 255 bytes, and decoding
-  refuses any other length. A synth definition file gives the length of a
-  name in one byte, and scsynth refuses 256 or more
-  (`SC_GraphDef.cpp:75-81`).
-- `/loadSynthdef` carries the bytes of a synth definition file as a blob,
-  which cannot be empty, as in `/d_recv`. The crate does not read the file.
-- The id of an element of a plugin is a string that cannot be empty, and
-  decoding refuses an empty one. `node` of `/loadGroup` and `/loadSynth`
-  is the node id that the page gives the element, as an int. The crate
-  checks no range of it, and the pump refuses a bad value. `parent` is
-  the id of the element of the group that holds the node, or the empty
-  string for the group of the plugin. `def` is the name of a synth
-  definition.
-- The controls of `/loadSynth` follow the rules of [Controls](#controls),
-  as in `/s_new`.
 - A Dirt plays sounds of samples in the group of an element. Its
   messages name that group by its node, an int. `block`, `orbits` and
   `out` of `/loadDirt` are ints: the block of node ids that the page gives
@@ -246,12 +225,6 @@ The bytes of a value decode back to the value, except for these values:
 
 - A string with a NUL byte. The crate writes it up to that byte.
 - A `DRecv` without bytes. Decoding refuses its empty blob.
-- A message of a synth definition of the pump with a name that is empty
-  or longer than 255 bytes, or a `LoadSynthdef` without bytes. Decoding
-  refuses them.
-- A message of a node of the pump with an empty id, or a `LoadSynth`
-  whose definition has an empty name or one longer than 255 bytes.
-  Decoding refuses them.
 - A `DirtPlay` with a negative index or a parameter with an empty name.
   Decoding refuses it.
 - A `Done::Plugin` or a `BufferFill::Plugin` with the name of another

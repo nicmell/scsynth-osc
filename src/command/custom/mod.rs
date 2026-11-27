@@ -5,36 +5,23 @@
 mod clock;
 mod dirt;
 mod groups;
-mod nodes;
 mod streams;
-mod synthdefs;
 mod tempo;
 
 pub use clock::ClockPing;
 pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
-pub use nodes::{LoadGroup, LoadSynth, Node};
 pub use streams::{Stream, StreamOpen};
-pub use synthdefs::{LoadSynthdef, Synthdef};
 pub use tempo::SetTempo;
-
-pub(crate) use nodes::read_id;
-pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 15] = [
+pub const ADDRESSES: [&str; 9] = [
     "/loadPlugin",
     "/unloadPlugin",
     "/clock.ping",
     "/stream.open",
     "/stream.close",
-    "/loadSynthdef",
-    "/unloadSynthdef",
-    "/loadGroup",
-    "/loadSynth",
-    "/unloadGroup",
-    "/unloadSynth",
     "/loadDirt",
     "/dirt.play",
     "/getTempo",
@@ -82,33 +69,6 @@ mod tests {
             bus: 256,
             channels: 1,
         };
-        let synthdef = Synthdef {
-            plugin: other,
-            name: "a1b2/sine".to_owned(),
-        };
-        let load = LoadSynthdef {
-            plugin: other,
-            name: synthdef.name.clone(),
-            data: vec![1],
-        };
-        let group = LoadGroup {
-            plugin: other,
-            id: "a".to_owned(),
-            node: 1,
-            parent: String::new(),
-        };
-        let synth = LoadSynth {
-            plugin: other,
-            id: "b".to_owned(),
-            node: 2,
-            parent: "a".to_owned(),
-            def: "c".to_owned(),
-            controls: Vec::new(),
-        };
-        let node = Node {
-            plugin: other,
-            id: "a".to_owned(),
-        };
         let dirt = LoadDirt {
             plugin: other,
             node: 2,
@@ -130,12 +90,6 @@ mod tests {
             Command::ClockPing(ClockPing { sent_ms: 0.0 }),
             Command::StreamOpen(open),
             Command::StreamClose(stream),
-            Command::LoadSynthdef(load),
-            Command::UnloadSynthdef(synthdef),
-            Command::LoadGroup(group),
-            Command::LoadSynth(synth),
-            Command::UnloadGroup(node.clone()),
-            Command::UnloadSynth(node),
             Command::LoadDirt(dirt),
             Command::DirtPlay(sound),
             Command::GetTempo,

@@ -4,17 +4,13 @@
 use scsynth_osc::command::buffer::{BFree, BGen, BWrite, HeaderFormat, SampleFormat};
 use scsynth_osc::command::buffer_fill::{BufferFill, Partial, PhasedPartial, WaveFillFlags};
 use scsynth_osc::command::control_bus::CSet;
-use scsynth_osc::command::custom::{
-    DirtParameter, DirtPlay, LoadDirt, LoadSynth, LoadSynthdef, Plugin, SetTempo,
-};
+use scsynth_osc::command::custom::{DirtParameter, DirtPlay, LoadDirt, Plugin, SetTempo};
 use scsynth_osc::command::node::NOrder;
 use scsynth_osc::command::synth::SNew;
 use scsynth_osc::command::synth_def::DLoad;
 use scsynth_osc::command::top_level::{Cmd, DumpMode, ErrorMode, Notify, SyncId};
 use scsynth_osc::reply::command_replies::{BufferCommand, Done, Fail};
-use scsynth_osc::reply::custom::{
-    DirtFailure, NodeLoaded, PluginFailure, StreamFrames, SynthdefFailure, Tempo,
-};
+use scsynth_osc::reply::custom::{DirtFailure, PluginFailure, StreamFrames, Tempo};
 use scsynth_osc::reply::group::{
     GQueryTreeReply, TreeControl, TreeGroup, TreeNode, TreeSynth, TreeValue,
 };
@@ -741,64 +737,6 @@ fn the_frames_of_a_stream_are_their_bytes() {
         &Reply::StreamFrames(frames),
         json!({"address": "/stream.frames", "args": {
             "stream": stream, "first": 1024.0, "samples": [0, 0, 128, 63]
-        }}),
-    );
-}
-
-#[test]
-fn a_synthdef_of_the_pump_is_its_name_and_its_bytes() {
-    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
-    let uuid = |text: &str| text.parse().expect("a uuid");
-    round_trip(
-        &Command::LoadSynthdef(LoadSynthdef {
-            plugin: uuid(plugin),
-            name: "a1b2/sine".to_owned(),
-            data: vec![83, 67, 103, 102],
-        }),
-        json!({"address": "/loadSynthdef", "args": {
-            "plugin": plugin, "name": "a1b2/sine", "data": [83, 67, 103, 102]
-        }}),
-    );
-    let failure = SynthdefFailure {
-        plugin: uuid(plugin),
-        name: "a1b2/sine".to_owned(),
-        reason: "The definition is too large to send to scsynth.".to_owned(),
-    };
-    round_trip(
-        &Reply::LoadSynthdefFailure(failure),
-        json!({"address": "/loadSynthdef.failure", "args": {
-            "plugin": plugin, "name": "a1b2/sine",
-            "reason": "The definition is too large to send to scsynth."
-        }}),
-    );
-}
-
-#[test]
-fn a_node_of_the_pump_is_its_ids_and_its_controls() {
-    let plugin = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
-    let uuid = |text: &str| text.parse().expect("a uuid");
-    round_trip(
-        &Command::LoadSynth(LoadSynth {
-            plugin: uuid(plugin),
-            id: "1bcdb1b42939e3".to_owned(),
-            node: 67_239_937,
-            parent: String::new(),
-            def: "32183c940ae4".to_owned(),
-            controls: vec![ControlSetting::new("freq", 261.0)],
-        }),
-        json!({"address": "/loadSynth", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_239_937, "parent": "",
-            "def": "32183c940ae4", "controls": [{"control": "freq", "value": 261.0}]
-        }}),
-    );
-    round_trip(
-        &Reply::LoadSynthSuccess(NodeLoaded {
-            plugin: uuid(plugin),
-            id: "1bcdb1b42939e3".to_owned(),
-            node: NodeId(67_239_937),
-        }),
-        json!({"address": "/loadSynth.success", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_239_937
         }}),
     );
 }
