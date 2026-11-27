@@ -116,13 +116,13 @@ lists the addresses of the commands.
 | `/stream.close` | stream | none |
 | `/loadSynthdef` | plugin, name, data | `/loadSynthdef.success plugin name`, `/loadSynthdef.failure plugin name reason` |
 | `/unloadSynthdef` | plugin, name | `/unloadSynthdef.success plugin name`, `/unloadSynthdef.failure plugin name reason` |
-| `/loadGroup` | plugin, id, parent | `/loadGroup.success plugin id node`, `/loadGroup.failure plugin id reason` |
-| `/loadSynth` | plugin, id, parent, def, controls | `/loadSynth.success plugin id node`, `/loadSynth.failure plugin id reason` |
+| `/loadGroup` | plugin, id, node, parent | `/loadGroup.success plugin id node`, `/loadGroup.failure plugin id reason` |
+| `/loadSynth` | plugin, id, node, parent, def, controls | `/loadSynth.success plugin id node`, `/loadSynth.failure plugin id reason` |
 | `/unloadGroup` | plugin, id | `/unloadGroup.success plugin id`, `/unloadGroup.failure plugin id reason` |
 | `/unloadSynth` | plugin, id | `/unloadSynth.success plugin id`, `/unloadSynth.failure plugin id reason` |
 | `/setControl` | plugin, id, controls | none |
 | `/getControl` | plugin, id, ranges | none |
-| `/loadDirt` | plugin, id, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
+| `/loadDirt` | plugin, id, block, orbits, out | `/loadDirt.success plugin id`, `/loadDirt.failure plugin id reason` |
 | `/dirt.play` | plugin, id, cycle, index, span, parameters | none, or `/dirt.play.failure plugin id reason` |
 | `/getTempo` | none | `/getTempo.success cps cycle server_ms` |
 | `/setTempo` | cps | none |
@@ -138,9 +138,12 @@ lists the addresses of the commands.
 - `/loadSynthdef` carries the bytes of a synth definition file as a blob,
   which cannot be empty, as in `/d_recv`. The crate does not read the file.
 - The id of an element of a plugin is a string that cannot be empty, and
-  decoding refuses an empty one. `parent` is the id of the element of the
-  group that holds the node, or the empty string for the group of the
-  plugin. `def` is the name of a synth definition.
+  decoding refuses an empty one. `node` of `/loadGroup` and `/loadSynth`
+  is the node id that the page gives the element, as an int. The crate
+  checks no range of it, and the pump refuses a bad value. `parent` is
+  the id of the element of the group that holds the node, or the empty
+  string for the group of the plugin. `def` is the name of a synth
+  definition.
 - The controls of `/loadSynth` follow the rules of [Controls](#controls),
   as in `/s_new`.
 - The `id` of `/setControl`, `/getControl` and `/control` is the id of the
@@ -151,10 +154,11 @@ lists the addresses of the commands.
   control and a count each. The crate checks no count, as in `/s_getn`:
   see [Traps](#traps). The ranges of `/control` are those of the `/n_setn`
   that answers `/s_getn`: a control, a count and that many floats each.
-- A Dirt plays sounds of samples in the group of an element. `orbits` and
-  `out` of `/loadDirt` are ints: the number of its orbits and the first of
-  its output buses. The crate checks no range of them, and the pump
-  refuses a bad value.
+- A Dirt plays sounds of samples in the group of an element. `block`,
+  `orbits` and `out` of `/loadDirt` are ints: the block of node ids that
+  the page gives the Dirt, the number of its orbits, and the first of its
+  output buses. The crate checks no range of them, and the pump refuses a
+  bad value.
 - `/dirt.play` carries a sound. `cycle` is the cycle of its start, and
   `span` its length in cycles, both as doubles. `index` counts the sounds
   of the element before it that start at the same cycle. It is an int of 0

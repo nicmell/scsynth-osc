@@ -783,12 +783,13 @@ fn a_node_of_the_pump_is_its_ids_and_its_controls() {
         &Command::LoadSynth(LoadSynth {
             plugin: uuid(plugin),
             id: "1bcdb1b42939e3".to_owned(),
+            node: 67_239_937,
             parent: String::new(),
             def: "32183c940ae4".to_owned(),
             controls: vec![ControlSetting::new("freq", 261.0)],
         }),
         json!({"address": "/loadSynth", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3", "parent": "",
+            "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_239_937, "parent": "",
             "def": "32183c940ae4", "controls": [{"control": "freq", "value": 261.0}]
         }}),
     );
@@ -796,10 +797,10 @@ fn a_node_of_the_pump_is_its_ids_and_its_controls() {
         &Reply::LoadSynthSuccess(NodeLoaded {
             plugin: uuid(plugin),
             id: "1bcdb1b42939e3".to_owned(),
-            node: NodeId(67_174_405),
+            node: NodeId(67_239_937),
         }),
         json!({"address": "/loadSynth.success", "args": {
-            "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_174_405
+            "plugin": plugin, "id": "1bcdb1b42939e3", "node": 67_239_937
         }}),
     );
 }
@@ -865,11 +866,12 @@ fn a_dirt_of_the_pump_is_its_element_and_a_sound_its_typed_parameters() {
         &Command::LoadDirt(LoadDirt {
             plugin: uuid(plugin),
             id: "5f0a3c9e21d47".to_owned(),
+            block: 0,
             orbits: 2,
             out: 0,
         }),
         json!({"address": "/loadDirt", "args": {
-            "plugin": plugin, "id": "5f0a3c9e21d47", "orbits": 2, "out": 0
+            "plugin": plugin, "id": "5f0a3c9e21d47", "block": 0, "orbits": 2, "out": 0
         }}),
     );
     round_trip(

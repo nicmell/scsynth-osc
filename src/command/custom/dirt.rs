@@ -1,6 +1,7 @@
 //! The commands of sc-app3's pump about the Dirt of an element of a
-//! plugin: the Dirt that the pump starts in the group of the element, and
-//! the sounds that it plays on it.
+//! plugin: the Dirt that the pump starts in the group of the element, on a
+//! block of node ids that the page gives, and the sounds that it plays on
+//! it.
 
 use rosc::OscType;
 use uuid::Uuid;
@@ -19,6 +20,8 @@ pub struct LoadDirt {
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
     pub id: String,
+    /// The block of node ids of the Dirt.
+    pub block: i32,
     /// The number of orbits of the Dirt.
     pub orbits: i32,
     /// The first of the output buses of the Dirt.
@@ -29,6 +32,7 @@ impl Payload for LoadDirt {
     fn write(&self, writer: &mut Writer) {
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
+        writer.int(self.block);
         writer.int(self.orbits);
         writer.int(self.out);
     }
@@ -37,6 +41,7 @@ impl Payload for LoadDirt {
         Ok(Self {
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
+            block: reader.int()?,
             orbits: reader.int()?,
             out: reader.int()?,
         })
@@ -250,13 +255,14 @@ mod tests {
         let load = LoadDirt {
             plugin: uuid(PLUGIN),
             id: ELEMENT.to_owned(),
+            block: 1,
             orbits: 2,
             out: 0,
         };
         assert_wire(
             &Command::LoadDirt(load),
             "/loadDirt",
-            vec![text(PLUGIN), text(ELEMENT), Int(2), Int(0)],
+            vec![text(PLUGIN), text(ELEMENT), Int(1), Int(2), Int(0)],
         );
         let play = DirtPlay {
             plugin: uuid(PLUGIN),
@@ -300,7 +306,10 @@ mod tests {
     #[test]
     fn an_id_is_not_empty() {
         for (address, args) in [
-            ("/loadDirt", vec![text(PLUGIN), text(""), Int(1), Int(0)]),
+            (
+                "/loadDirt",
+                vec![text(PLUGIN), text(""), Int(0), Int(1), Int(0)],
+            ),
             (
                 "/dirt.play",
                 vec![text(PLUGIN), text(""), Double(4.0), Int(0), Double(0.5)],

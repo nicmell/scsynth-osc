@@ -101,11 +101,13 @@ mod tests {
         let group = LoadGroup {
             plugin: other,
             id: "a".to_owned(),
+            node: 1,
             parent: String::new(),
         };
         let synth = LoadSynth {
             plugin: other,
             id: "b".to_owned(),
+            node: 2,
             parent: "a".to_owned(),
             def: "c".to_owned(),
             controls: Vec::new(),
@@ -130,6 +132,7 @@ mod tests {
         let dirt = LoadDirt {
             plugin: other,
             id: "a".to_owned(),
+            block: 0,
             orbits: 1,
             out: 0,
         };

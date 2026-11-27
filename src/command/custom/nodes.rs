@@ -1,6 +1,7 @@
 //! The commands of sc-app3's pump about the nodes of the elements of a
-//! plugin: a group or a synth that the pump makes in scsynth, in the group
-//! of the plugin or in the group of a parent element, and frees.
+//! plugin: a group or a synth that the pump makes in scsynth on a node that
+//! the page gives, in the group of the plugin or in the group of a parent
+//! element, and frees.
 
 use uuid::Uuid;
 
@@ -17,6 +18,8 @@ pub struct LoadGroup {
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
     pub id: String,
+    /// The node id of the group.
+    pub node: i32,
     /// The id of the element of the group that holds it, or empty for the
     /// group of the plugin.
     pub parent: String,
@@ -26,6 +29,7 @@ impl Payload for LoadGroup {
     fn write(&self, writer: &mut Writer) {
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
+        writer.int(self.node);
         writer.string(&self.parent);
     }
 
@@ -33,6 +37,7 @@ impl Payload for LoadGroup {
         Ok(Self {
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
+            node: reader.int()?,
             parent: reader.string()?,
         })
     }
@@ -47,6 +52,8 @@ pub struct LoadSynth {
     pub plugin: Uuid,
     /// The id of the element. It cannot be empty.
     pub id: String,
+    /// The node id of the synth.
+    pub node: i32,
     /// The id of the element of the group that holds it, or empty for the
     /// group of the plugin.
     pub parent: String,
@@ -60,6 +67,7 @@ impl Payload for LoadSynth {
     fn write(&self, writer: &mut Writer) {
         write_uuid(writer, self.plugin);
         writer.string(&self.id);
+        writer.int(self.node);
         writer.string(&self.parent);
         writer.string(&self.def);
         for setting in &self.controls {
@@ -71,6 +79,7 @@ impl Payload for LoadSynth {
         Ok(Self {
             plugin: read_uuid(reader)?,
             id: read_id(reader)?,
+            node: reader.int()?,
             parent: reader.string()?,
             def: read_name(reader)?,
             controls: reader.rest(ControlSetting::read)?,
@@ -138,16 +147,23 @@ mod tests {
         let group = LoadGroup {
             plugin: uuid(PLUGIN),
             id: "39fc2565fa0c9".to_owned(),
+            node: 67_239_937,
             parent: String::new(),
         };
         assert_wire(
             &Command::LoadGroup(group),
             "/loadGroup",
-            vec![text(PLUGIN), text("39fc2565fa0c9"), text("")],
+            vec![
+                text(PLUGIN),
+                text("39fc2565fa0c9"),
+                Int(67_239_937),
+                text(""),
+            ],
         );
         let synth = LoadSynth {
             plugin: uuid(PLUGIN),
             id: "1bcdb1b42939e3".to_owned(),
+            node: 67_239_938,
             parent: "39fc2565fa0c9".to_owned(),
             def: "32183c940ae4".to_owned(),
             controls: vec![
@@ -161,6 +177,7 @@ mod tests {
             vec![
                 text(PLUGIN),
                 text("1bcdb1b42939e3"),
+                Int(67_239_938),
                 text("39fc2565fa0c9"),
                 text("32183c940ae4"),
                 text("freq"),
@@ -184,7 +201,7 @@ mod tests {
 
     #[test]
     fn an_id_is_not_empty_and_a_definition_takes_1_to_255_bytes() {
-        let group = |id: &str| vec![text(PLUGIN), text(id), text("")];
+        let group = |id: &str| vec![text(PLUGIN), text(id), Int(1), text("")];
         let kind = decode_error::<Command>("/loadGroup", group(""));
         assert!(
             matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
@@ -202,21 +219,22 @@ mod tests {
             Command::LoadGroup(LoadGroup {
                 plugin: uuid(PLUGIN),
                 id: "a".to_owned(),
+                node: 1,
                 parent: String::new(),
             })
         );
-        let synth = |def: &str| vec![text(PLUGIN), text("a"), text(""), text(def)];
+        let synth = |def: &str| vec![text(PLUGIN), text("a"), Int(1), text(""), text(def)];
         for def in [String::new(), "n".repeat(256)] {
             let kind = decode_error::<Command>("/loadSynth", synth(&def));
             assert!(
-                matches!(kind, DecodeErrorKind::Invalid { index: 3, .. }),
+                matches!(kind, DecodeErrorKind::Invalid { index: 4, .. }),
                 "{}: {kind:?}",
                 def.len()
             );
         }
         let kind = decode_error::<Command>(
             "/loadSynth",
-            vec![text("not a uuid"), text("a"), text(""), text("b")],
+            vec![text("not a uuid"), text("a"), Int(1), text(""), text("b")],
         );
         assert!(
             matches!(kind, DecodeErrorKind::Invalid { index: 0, .. }),

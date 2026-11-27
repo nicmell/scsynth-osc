@@ -7,6 +7,9 @@
 - The messages of sc-app3's pump name no session, because the websocket of
   a page belongs to one session. `/loadRoot`, `/unloadRoot` and their
   `.success` answers take no argument.
+- The page gives the node ids of the elements: `/loadGroup` and
+  `/loadSynth` carry a `node` after the id of the element, and `/loadDirt`
+  carries a `block` of node ids after it.
 
 ### Added
 
