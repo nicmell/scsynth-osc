@@ -127,7 +127,7 @@ impl SynthControls for Vec<TreeControl> {
                     OscType::String(text) => {
                         TreeValue::Bus(BusMapping::parse_at(reader, index, text)?)
                     }
-                    other => return Err(reader.wrong(other, EXPECTED)),
+                    other => return Err(reader.wrong_osc(other, EXPECTED)),
                 };
                 Ok(TreeControl { control, value })
             })

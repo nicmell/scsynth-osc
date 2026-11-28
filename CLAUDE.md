@@ -12,12 +12,11 @@ before any work.
 ## Branches
 
 - `main` is the library. Each release is a tag `v<version>`.
-- `sc-app3` adds the protocol of the pump of sc-app3
-  (github.com/nicmell/sc-app3). sc-app3 takes this branch as a git
-  submodule. A change to that protocol goes to `sc-app3` only.
-- `sc-app3` takes `main` by a merge, never by a rebase or a force-push.
-  The commits of sc-app3 pin commits of this branch. A rewrite orphans
-  them.
+- `sc-app3` held the protocol of the pump of sc-app3
+  (github.com/nicmell/sc-app3) up to 0.2.1. Since 0.2.2, sc-app3 declares
+  its messages with `messages!` and takes `main` as its git submodule.
+  The branch is frozen: older commits of sc-app3 pin its commits, so it
+  is never rebased, force-pushed or deleted.
 
 ## Ground rules
 
@@ -45,8 +44,7 @@ cargo deny check
 
 CI (`.github/workflows/ci.yml`) runs them with `--locked`. It also runs
 `cargo package` and builds the Vite example, whose README gives its own
-commands (`examples/vite/README.md`). On the branch `sc-app3`, CI runs on
-its pushes too.
+commands (`examples/vite/README.md`).
 
 ## Conventions
 

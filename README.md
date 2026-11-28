@@ -70,6 +70,34 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
   `IndexFill` and `IndexRange`. Their values are `f32`, or `Number` where
   the reference takes an int too.
 
+Each address is also a constant of its enum, named after the address in
+capitals: `Command::S_NEW` is `"/s_new"`, and `Reply::STATUS_REPLY` is
+`"/status.reply"`. A `_` stands for a `.`, and goes before a capital that
+follows a lowercase letter, as in `Command::G_QUERY_TREE`. An address of
+both directions has a constant on each enum: `Command::N_SET` and
+`Reply::N_SET`. `ADDRESSES` lists the addresses of an enum, in the order
+of its variants. The constants also work as patterns:
+
+```rust
+use scsynth_osc::{Command, RawMessage, Reply};
+
+assert_eq!(Command::S_NEW, "/s_new");
+assert!(Reply::ADDRESSES.contains(&Reply::STATUS_REPLY));
+
+fn is_node_notification(raw: &RawMessage) -> bool {
+    matches!(
+        raw.address.as_str(),
+        Reply::N_GO | Reply::N_END | Reply::N_OFF | Reply::N_ON | Reply::N_MOVE | Reply::N_INFO
+    )
+}
+
+let go = RawMessage {
+    address: "/n_go".to_owned(),
+    args: Vec::new(),
+};
+assert!(is_node_notification(&go));
+```
+
 ## Raw messages
 
 A `RawMessage` is one OSC message as its address and its typed arguments,
@@ -95,8 +123,79 @@ assert_eq!(Command::from_raw(&raw), Ok(Command::Sync(SyncId(7))));
 - A `Packet<RawMessage>` decodes bundles too.
 - Encoding writes a string, the address too, up to its first NUL byte,
   and checks nothing else. The guarantee under [Strictness](#strictness)
-  covers `Command` and `Reply` only: check a raw message with
-  `Command::from_raw` before it goes to scsynth.
+  covers `Command`, `Reply` and the enums of `messages!` only: check a
+  raw message with `Command::from_raw` before it goes to scsynth.
+
+## Custom messages
+
+An app that has messages of its own beside those of scsynth declares them
+with `messages!`, the macro that declares `Command` and `Reply`. Each line
+gives an address, the name of its constant, the variant, and the type of
+its arguments, which implements `Payload`. The enum gets what `Command`
+has: the constants and `ADDRESSES`, `address`, `encode`, `decode`,
+`to_raw`, `from_raw`, and its `Packet`.
+
+```rust
+use scsynth_osc::{Command, DecodeError, DecodeErrorKind, Payload, Reader, Writer};
+
+/// The arguments of `/hello`: a name.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Hello {
+    pub name: String,
+}
+
+impl Payload for Hello {
+    fn write(&self, writer: &mut Writer) {
+        writer.string(&self.name);
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        Ok(Self {
+            name: reader.string()?,
+        })
+    }
+}
+
+scsynth_osc::messages! {
+    /// The commands of the server of an app.
+    pub enum AppCommand {
+        /// `/hello`: the server greets a name.
+        "/hello" as HELLO => Hello(Hello),
+        /// `/bye`: no arguments.
+        "/bye" as BYE => Bye,
+    }
+}
+
+let hello = AppCommand::Hello(Hello {
+    name: "ada".to_owned(),
+});
+assert_eq!(AppCommand::decode(&hello.encode()), Ok(hello.clone()));
+assert_eq!(hello.address(), AppCommand::HELLO);
+assert_eq!(AppCommand::ADDRESSES, &["/hello", "/bye"]);
+
+// An address of scsynth is no command of the app.
+let error = AppCommand::decode(&Command::Status.encode()).unwrap_err();
+assert_eq!(error.kind(), &DecodeErrorKind::UnknownAddress);
+```
+
+- A `Payload` writes its arguments with a `Writer` and reads them with a
+  `Reader`, each in the type that the protocol gives it. It reads from
+  the position of the reader, so payloads compose: the value types of
+  the crate, such as `NodeId` and `ControlValue`, are payloads too.
+  `Reader::arg` takes an argument of any type, as a `RawArg`, and
+  `Reader::wrong` refuses it.
+- Decoding is as strict as for `Command`: an unknown address, a missing
+  argument, another type, a refused value, or an argument after the last
+  one is an error, and its `DecodeErrorKind` says which. `from_raw`
+  refuses an unknown address before it copies the arguments.
+- The enum of an app does not decode the messages of scsynth, and
+  `Command` does not decode those of the app. A stream that carries both
+  reads each message with one, then with the other.
+- `messages! { serde; … }` derives `Serialize` and `Deserialize`, in the
+  shape of `Command` under [Features](#features). The crate that declares
+  the enum needs `serde` with `derive`. A `cfg` in the output of a macro
+  is read in the crate that expands it, so the macro cannot follow the
+  feature `serde` of this crate in an app.
 
 ## Strictness
 
@@ -316,6 +415,9 @@ remove it.
 - `serde`: `Serialize` and `Deserialize` for every type. A command or a
   reply is then an object with its `address` and its `args`, such as
   `{"address": "/sync", "args": 7}`.
+  - The enum of an app takes the same shape with `messages! { serde; … }`,
+    which does not need this feature. See
+    [Custom messages](#custom-messages).
   - The values that take more than one type, such as `Control` and
     `Number`, are untagged enums, and a `RawArg` is a map or a sequence.
     They deserialize only from a format that describes its own types, such

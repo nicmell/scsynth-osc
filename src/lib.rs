@@ -12,7 +12,7 @@ mod testing;
 mod types;
 
 pub use argument::Argument;
-pub use codec::Message;
+pub use codec::{Message, Payload, Reader, Writer};
 pub use command::top_level::SyncId;
 pub use command::{Command, Completion};
 pub use error::{DecodeError, DecodeErrorKind};
@@ -26,3 +26,9 @@ pub use types::{
     IndexFill, IndexRange, IndexValue, IndexValues, NewNodeId, NodeId, NotABusMapping, Number,
     OrderAction, OutOfRange,
 };
+
+/// What the output of [`messages!`] names. Not part of the API.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::codec::{Dispatch, decode, encode, from_raw, to_raw, unknown_address};
+}

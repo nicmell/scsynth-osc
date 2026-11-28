@@ -71,8 +71,9 @@ pub(crate) fn read_plugin_args(reader: &mut Reader<'_>) -> Result<Vec<Argument>,
     let mut args = Vec::new();
     while reader.remains() {
         let value = reader.any("a plugin argument")?;
-        let arg = Argument::from_osc(value)
-            .ok_or_else(|| reader.wrong(value, "an int, a float, a double, a string or a blob"))?;
+        let arg = Argument::from_osc(value).ok_or_else(|| {
+            reader.wrong_osc(value, "an int, a float, a double, a string or a blob")
+        })?;
         args.push(arg);
     }
     Ok(args)

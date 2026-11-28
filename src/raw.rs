@@ -3,7 +3,7 @@
 
 use rosc::{OscArray, OscColor, OscMessage, OscMidiMessage, OscType};
 
-use crate::codec::{Message, sealed};
+use crate::codec::{Message, sealed, tag};
 use crate::error::DecodeError;
 use crate::packet::{Timetag, decode_message, encode_message};
 
@@ -80,6 +80,13 @@ pub struct MidiMessage {
     pub data1: u8,
     /// The second data byte.
     pub data2: u8,
+}
+
+impl RawArg {
+    /// The OSC type tag of the argument.
+    pub(crate) fn tag(&self) -> char {
+        tag(&osc_arg(self))
+    }
 }
 
 impl RawMessage {
@@ -160,7 +167,7 @@ fn osc_arg(arg: &RawArg) -> OscType {
     }
 }
 
-fn up_to_nul(value: &str) -> &str {
+pub(crate) fn up_to_nul(value: &str) -> &str {
     value.find('\0').map_or(value, |end| &value[..end])
 }
 
@@ -172,7 +179,7 @@ fn raw_message(message: &OscMessage) -> RawMessage {
     }
 }
 
-fn raw_arg(value: &OscType) -> RawArg {
+pub(crate) fn raw_arg(value: &OscType) -> RawArg {
     match value {
         OscType::Int(value) => RawArg::Int(*value),
         OscType::Float(value) => RawArg::Float(*value),

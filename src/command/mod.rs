@@ -14,152 +14,154 @@ pub mod unit_generator;
 use rosc::{OscBundle, OscPacket, OscType};
 
 use crate::codec::sealed::Codec;
-use crate::codec::{Reader, Writer, messages};
+use crate::codec::{Reader, Writer};
 use crate::error::{DecodeError, DecodeErrorKind};
 use crate::packet::{Timetag, decode_osc, encode_osc};
 
-messages! {
+crate::messages! {
+    @cfg [feature = "serde"]
     /// A command for scsynth: one variant per command of the Server Command
     /// Reference, except those under [Left out](crate#left-out).
     #[non_exhaustive]
-    Command {
+    pub enum Command {
         /// `/quit`: the server quits. It replies `/done /quit`.
-        "/quit" => Quit,
+        "/quit" as QUIT => Quit,
         /// `/notify`: registers the sender for notifications, or ends its
         /// registration.
-        "/notify" => Notify(top_level::Notify),
+        "/notify" as NOTIFY => Notify(top_level::Notify),
         /// `/status`: the server replies `/status.reply`.
-        "/status" => Status,
+        "/status" as STATUS => Status,
         /// `/cmd`: a command that a plugin defines.
-        "/cmd" => Cmd(top_level::Cmd),
+        "/cmd" as CMD => Cmd(top_level::Cmd),
         /// `/dumpOSC`: the server prints the messages it receives, or stops.
-        "/dumpOSC" => DumpOsc(top_level::DumpMode),
+        "/dumpOSC" as DUMP_OSC => DumpOsc(top_level::DumpMode),
         /// `/sync`: the server replies `/synced` once every asynchronous
         /// command received before it completed.
-        "/sync" => Sync(top_level::SyncId),
+        "/sync" as SYNC => Sync(top_level::SyncId),
         /// `/clearSched`: the server drops every scheduled bundle.
-        "/clearSched" => ClearSched,
+        "/clearSched" as CLEAR_SCHED => ClearSched,
         /// `/error`: turns the posting of errors on or off.
-        "/error" => Error(top_level::ErrorMode),
+        "/error" as ERROR => Error(top_level::ErrorMode),
         /// `/version`: the server replies `/version.reply`.
-        "/version" => Version,
+        "/version" as VERSION => Version,
         /// `/rtMemoryStatus`: the server replies `/rtMemoryStatus.reply`.
-        "/rtMemoryStatus" => RtMemoryStatus,
+        "/rtMemoryStatus" as RT_MEMORY_STATUS => RtMemoryStatus,
         /// `/d_recv`: defines synths from the bytes of a synth definition
         /// file.
-        "/d_recv" => DRecv(synth_def::DRecv),
+        "/d_recv" as D_RECV => DRecv(synth_def::DRecv),
         /// `/d_load`: loads synth definitions from files.
-        "/d_load" => DLoad(synth_def::DLoad),
+        "/d_load" as D_LOAD => DLoad(synth_def::DLoad),
         /// `/d_loadDir`: loads the synth definitions of a directory.
-        "/d_loadDir" => DLoadDir(synth_def::DLoadDir),
+        "/d_loadDir" as D_LOAD_DIR => DLoadDir(synth_def::DLoadDir),
         /// `/d_free`: removes synth definitions.
-        "/d_free" => DFree(synth_def::DFree),
+        "/d_free" as D_FREE => DFree(synth_def::DFree),
         /// `/n_free`: frees nodes.
-        "/n_free" => NFree(node::NFree),
+        "/n_free" as N_FREE => NFree(node::NFree),
         /// `/n_run`: turns nodes on or off.
-        "/n_run" => NRun(node::NRun),
+        "/n_run" as N_RUN => NRun(node::NRun),
         /// `/n_set`: sets controls of a node.
-        "/n_set" => NSet(node::NSet),
+        "/n_set" as N_SET => NSet(node::NSet),
         /// `/n_setn`: sets ranges of controls of a node.
-        "/n_setn" => NSetn(node::NSetn),
+        "/n_setn" as N_SETN => NSetn(node::NSetn),
         /// `/n_fill`: sets ranges of controls of a node to one value each.
-        "/n_fill" => NFill(node::NFill),
+        "/n_fill" as N_FILL => NFill(node::NFill),
         /// `/n_map`: maps controls of a node to control buses.
-        "/n_map" => NMap(node::NMap),
+        "/n_map" as N_MAP => NMap(node::NMap),
         /// `/n_mapn`: maps ranges of controls of a node to control buses.
-        "/n_mapn" => NMapn(node::NMapn),
+        "/n_mapn" as N_MAPN => NMapn(node::NMapn),
         /// `/n_mapa`: maps controls of a node to audio buses.
-        "/n_mapa" => NMapa(node::NMapa),
+        "/n_mapa" as N_MAPA => NMapa(node::NMapa),
         /// `/n_mapan`: maps ranges of controls of a node to audio buses.
-        "/n_mapan" => NMapan(node::NMapan),
+        "/n_mapan" as N_MAPAN => NMapan(node::NMapan),
         /// `/n_before`: moves nodes before others.
-        "/n_before" => NBefore(node::NBefore),
+        "/n_before" as N_BEFORE => NBefore(node::NBefore),
         /// `/n_after`: moves nodes after others.
-        "/n_after" => NAfter(node::NAfter),
+        "/n_after" as N_AFTER => NAfter(node::NAfter),
         /// `/n_query`: the server sends `/n_info` for nodes.
-        "/n_query" => NQuery(node::NQuery),
+        "/n_query" as N_QUERY => NQuery(node::NQuery),
         /// `/n_trace`: the server prints what nodes do for one control
         /// period.
-        "/n_trace" => NTrace(node::NTrace),
+        "/n_trace" as N_TRACE => NTrace(node::NTrace),
         /// `/n_order`: moves nodes next to a target, in order.
-        "/n_order" => NOrder(node::NOrder),
+        "/n_order" as N_ORDER => NOrder(node::NOrder),
         /// `/s_new`: creates a synth.
-        "/s_new" => SNew(synth::SNew),
+        "/s_new" as S_NEW => SNew(synth::SNew),
         /// `/s_get`: the server replies `/n_set` with values of controls.
-        "/s_get" => SGet(synth::SGet),
+        "/s_get" as S_GET => SGet(synth::SGet),
         /// `/s_getn`: the server replies `/n_setn` with values of ranges of
         /// controls.
-        "/s_getn" => SGetn(synth::SGetn),
+        "/s_getn" as S_GETN => SGetn(synth::SGetn),
         /// `/s_noid`: synths give up their IDs.
-        "/s_noid" => SNoid(synth::SNoid),
+        "/s_noid" as S_NOID => SNoid(synth::SNoid),
         /// `/g_new`: creates groups.
-        "/g_new" => GNew(group::GNew),
+        "/g_new" as G_NEW => GNew(group::GNew),
         /// `/p_new`: creates parallel groups.
-        "/p_new" => PNew(group::PNew),
+        "/p_new" as P_NEW => PNew(group::PNew),
         /// `/g_head`: moves nodes to the head of groups.
-        "/g_head" => GHead(group::GHead),
+        "/g_head" as G_HEAD => GHead(group::GHead),
         /// `/g_tail`: moves nodes to the tail of groups.
-        "/g_tail" => GTail(group::GTail),
+        "/g_tail" as G_TAIL => GTail(group::GTail),
         /// `/g_freeAll`: frees every node in groups.
-        "/g_freeAll" => GFreeAll(group::GFreeAll),
+        "/g_freeAll" as G_FREE_ALL => GFreeAll(group::GFreeAll),
         /// `/g_deepFree`: frees every synth in groups, and in the groups
         /// inside them.
-        "/g_deepFree" => GDeepFree(group::GDeepFree),
+        "/g_deepFree" as G_DEEP_FREE => GDeepFree(group::GDeepFree),
         /// `/g_dumpTree`: the server prints the trees of groups.
-        "/g_dumpTree" => GDumpTree(group::GDumpTree),
+        "/g_dumpTree" as G_DUMP_TREE => GDumpTree(group::GDumpTree),
         /// `/g_queryTree`: the server replies `/g_queryTree.reply` for
         /// groups.
-        "/g_queryTree" => GQueryTree(group::GQueryTree),
+        "/g_queryTree" as G_QUERY_TREE => GQueryTree(group::GQueryTree),
         /// `/u_cmd`: a command that a plugin defines for a unit generator.
-        "/u_cmd" => UCmd(unit_generator::UCmd),
+        "/u_cmd" as U_CMD => UCmd(unit_generator::UCmd),
         /// `/b_alloc`: allocates a buffer.
-        "/b_alloc" => BAlloc(buffer::BAlloc),
+        "/b_alloc" as B_ALLOC => BAlloc(buffer::BAlloc),
         /// `/b_allocRead`: allocates a buffer, and reads a sound file into
         /// it.
-        "/b_allocRead" => BAllocRead(buffer::BAllocRead),
+        "/b_allocRead" as B_ALLOC_READ => BAllocRead(buffer::BAllocRead),
         /// `/b_allocReadChannel`: allocates a buffer, and reads channels of
         /// a sound file into it.
-        "/b_allocReadChannel" => BAllocReadChannel(buffer::BAllocReadChannel),
+        "/b_allocReadChannel" as B_ALLOC_READ_CHANNEL =>
+            BAllocReadChannel(buffer::BAllocReadChannel),
         /// `/b_read`: reads a sound file into a buffer.
-        "/b_read" => BRead(buffer::BRead),
+        "/b_read" as B_READ => BRead(buffer::BRead),
         /// `/b_readChannel`: reads channels of a sound file into a buffer.
-        "/b_readChannel" => BReadChannel(buffer::BReadChannel),
+        "/b_readChannel" as B_READ_CHANNEL => BReadChannel(buffer::BReadChannel),
         /// `/b_write`: writes a buffer into a sound file.
-        "/b_write" => BWrite(buffer::BWrite),
+        "/b_write" as B_WRITE => BWrite(buffer::BWrite),
         /// `/b_free`: frees a buffer.
-        "/b_free" => BFree(buffer::BFree),
+        "/b_free" as B_FREE => BFree(buffer::BFree),
         /// `/b_zero`: sets every sample of a buffer to 0.
-        "/b_zero" => BZero(buffer::BZero),
+        "/b_zero" as B_ZERO => BZero(buffer::BZero),
         /// `/b_set`: sets samples of a buffer.
-        "/b_set" => BSet(buffer::BSet),
+        "/b_set" as B_SET => BSet(buffer::BSet),
         /// `/b_setn`: sets ranges of samples of a buffer.
-        "/b_setn" => BSetn(buffer::BSetn),
+        "/b_setn" as B_SETN => BSetn(buffer::BSetn),
         /// `/b_setSampleRate`: sets the sample rate of a buffer.
-        "/b_setSampleRate" => BSetSampleRate(buffer::BSetSampleRate),
+        "/b_setSampleRate" as B_SET_SAMPLE_RATE => BSetSampleRate(buffer::BSetSampleRate),
         /// `/b_fill`: sets ranges of samples of a buffer to one value each.
-        "/b_fill" => BFill(buffer::BFill),
+        "/b_fill" as B_FILL => BFill(buffer::BFill),
         /// `/b_gen`: a fill command writes a buffer.
-        "/b_gen" => BGen(buffer::BGen),
+        "/b_gen" as B_GEN => BGen(buffer::BGen),
         /// `/b_close`: closes the sound file of a buffer.
-        "/b_close" => BClose(buffer::BClose),
+        "/b_close" as B_CLOSE => BClose(buffer::BClose),
         /// `/b_query`: the server replies `/b_info` for buffers.
-        "/b_query" => BQuery(buffer::BQuery),
+        "/b_query" as B_QUERY => BQuery(buffer::BQuery),
         /// `/b_get`: the server replies `/b_set` with values of samples.
-        "/b_get" => BGet(buffer::BGet),
+        "/b_get" as B_GET => BGet(buffer::BGet),
         /// `/b_getn`: the server replies `/b_setn` with values of ranges of
         /// samples.
-        "/b_getn" => BGetn(buffer::BGetn),
+        "/b_getn" as B_GETN => BGetn(buffer::BGetn),
         /// `/c_set`: sets control buses.
-        "/c_set" => CSet(control_bus::CSet),
+        "/c_set" as C_SET => CSet(control_bus::CSet),
         /// `/c_setn`: sets ranges of control buses.
-        "/c_setn" => CSetn(control_bus::CSetn),
+        "/c_setn" as C_SETN => CSetn(control_bus::CSetn),
         /// `/c_fill`: sets ranges of control buses to one value each.
-        "/c_fill" => CFill(control_bus::CFill),
+        "/c_fill" as C_FILL => CFill(control_bus::CFill),
         /// `/c_get`: the server replies `/c_set` with values of buses.
-        "/c_get" => CGet(control_bus::CGet),
+        "/c_get" as C_GET => CGet(control_bus::CGet),
         /// `/c_getn`: the server replies `/c_setn` with values of ranges of
         /// buses.
-        "/c_getn" => CGetn(control_bus::CGetn),
+        "/c_getn" as C_GETN => CGetn(control_bus::CGetn),
     }
 }
 

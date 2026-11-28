@@ -49,8 +49,9 @@ impl Timetag {
     }
 }
 
-/// One message, or a bundle of packets. `T` is [`crate::Command`] or
-/// [`crate::Reply`].
+/// One message, or a bundle of packets. `T` is a [`crate::Message`]: a
+/// [`crate::Command`], a [`crate::Reply`], a [`crate::RawMessage`], or an
+/// enum of [`messages!`](crate::messages).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
