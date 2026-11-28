@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.2 (2026-11-28)
+
+### Added
+
+- Each address is a constant of its enum, such as `Command::S_NEW` for
+  `/s_new` and `Reply::STATUS_REPLY` for `/status.reply`, and
+  `ADDRESSES` lists the addresses of an enum. See
+  [The messages](README.md#the-messages).
+- `messages!`, the macro that declares `Command` and `Reply`: a crate
+  declares an enum of its own messages with it, and with
+  `messages! { serde; … }` for `Serialize` and `Deserialize`. `Payload`,
+  `Reader` and `Writer` are public for the arguments of those messages,
+  and the value types, such as `NodeId`, implement `Payload`. See
+  [Custom messages](README.md#custom-messages).
+
 ## 0.2.1 (2026-11-22)
 
 ### Added
