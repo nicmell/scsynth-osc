@@ -1,10 +1,11 @@
 //! The strict reading and the canonical writing of arguments, and what the
-//! enums of commands and replies share.
+//! enums of `messages!` share.
 
-use rosc::OscType;
+use rosc::{OscMessage, OscType};
 
 use crate::error::{DecodeError, DecodeErrorKind};
-use crate::raw::RawArg;
+use crate::packet::{decode_message, encode_message};
+use crate::raw::{RawArg, RawMessage, osc_message, raw_arg, up_to_nul};
 
 /// The OSC type tag of an argument.
 pub(crate) fn tag(value: &OscType) -> char {
@@ -27,9 +28,9 @@ pub(crate) fn tag(value: &OscType) -> char {
     }
 }
 
-/// A cursor over the arguments of one message. It takes each argument only
-/// in the type that the protocol gives it.
-pub(crate) struct Reader<'a> {
+/// A cursor over the arguments of one message, which a [`Payload`] reads.
+/// It takes each argument only in the type that the protocol gives it.
+pub struct Reader<'a> {
     address: &'a str,
     args: &'a [OscType],
     index: usize,
@@ -48,8 +49,10 @@ impl<'a> Reader<'a> {
         DecodeError::new(self.address, kind)
     }
 
-    /// The argument at `index` has a value that the protocol does not take.
-    pub(crate) fn invalid(&self, index: usize, reason: impl Into<String>) -> DecodeError {
+    /// The error of the argument at `index`, whose value the protocol does
+    /// not take, for `reason`.
+    #[must_use]
+    pub fn invalid(&self, index: usize, reason: impl Into<String>) -> DecodeError {
         self.error(DecodeErrorKind::Invalid {
             index,
             reason: reason.into(),
@@ -57,11 +60,14 @@ impl<'a> Reader<'a> {
     }
 
     /// The position of the next argument.
-    pub(crate) fn index(&self) -> usize {
+    #[must_use]
+    pub fn index(&self) -> usize {
         self.index
     }
 
-    pub(crate) fn remains(&self) -> bool {
+    /// Whether an argument is left.
+    #[must_use]
+    pub fn remains(&self) -> bool {
         self.index < self.args.len()
     }
 
@@ -82,7 +88,7 @@ impl<'a> Reader<'a> {
     }
 
     /// `value`, the argument just taken, is not `expected`.
-    pub(crate) fn wrong(&self, value: &OscType, expected: &'static str) -> DecodeError {
+    pub(crate) fn wrong_osc(&self, value: &OscType, expected: &'static str) -> DecodeError {
         self.error(DecodeErrorKind::WrongType {
             index: self.index - 1,
             expected,
@@ -90,38 +96,84 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub(crate) fn int(&mut self) -> Result<i32, DecodeError> {
+    /// The next argument, of any type. `expected` says what it must be,
+    /// for the error when none is left.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left.
+    pub fn arg(&mut self, expected: &'static str) -> Result<RawArg, DecodeError> {
+        self.any(expected).map(raw_arg)
+    }
+
+    /// The error of `value`, the argument that [`Self::arg`] just took,
+    /// which is not `expected`.
+    #[must_use]
+    pub fn wrong(&self, value: &RawArg, expected: &'static str) -> DecodeError {
+        self.error(DecodeErrorKind::WrongType {
+            index: self.index - 1,
+            expected,
+            found: value.tag(),
+        })
+    }
+
+    /// The next argument, an int.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not an int.
+    pub fn int(&mut self) -> Result<i32, DecodeError> {
         match self.any("an int")? {
             OscType::Int(value) => Ok(*value),
-            other => Err(self.wrong(other, "an int")),
+            other => Err(self.wrong_osc(other, "an int")),
         }
     }
 
-    pub(crate) fn float(&mut self) -> Result<f32, DecodeError> {
+    /// The next argument, a float.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not a float.
+    pub fn float(&mut self) -> Result<f32, DecodeError> {
         match self.any("a float")? {
             OscType::Float(value) => Ok(*value),
-            other => Err(self.wrong(other, "a float")),
+            other => Err(self.wrong_osc(other, "a float")),
         }
     }
 
-    pub(crate) fn double(&mut self) -> Result<f64, DecodeError> {
+    /// The next argument, a double.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not a double.
+    pub fn double(&mut self) -> Result<f64, DecodeError> {
         match self.any("a double")? {
             OscType::Double(value) => Ok(*value),
-            other => Err(self.wrong(other, "a double")),
+            other => Err(self.wrong_osc(other, "a double")),
         }
     }
 
-    pub(crate) fn string(&mut self) -> Result<String, DecodeError> {
+    /// The next argument, a string.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not a string.
+    pub fn string(&mut self) -> Result<String, DecodeError> {
         match self.any("a string")? {
             OscType::String(value) => Ok(value.clone()),
-            other => Err(self.wrong(other, "a string")),
+            other => Err(self.wrong_osc(other, "a string")),
         }
     }
 
-    pub(crate) fn blob(&mut self) -> Result<Vec<u8>, DecodeError> {
+    /// The next argument, a blob.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not a blob.
+    pub fn blob(&mut self) -> Result<Vec<u8>, DecodeError> {
         match self.any("a blob")? {
             OscType::Blob(value) => Ok(value.clone()),
-            other => Err(self.wrong(other, "a blob")),
+            other => Err(self.wrong_osc(other, "a blob")),
         }
     }
 
@@ -172,8 +224,12 @@ impl<'a> Reader<'a> {
         from_name(&name).ok_or_else(|| self.invalid(index, format!("{name:?} is not {expected}")))
     }
 
-    /// An int that stands for a flag: 1 or 0.
-    pub(crate) fn flag(&mut self) -> Result<bool, DecodeError> {
+    /// The next argument, an int that stands for a flag: 1 or 0.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not 1 or 0.
+    pub fn flag(&mut self) -> Result<bool, DecodeError> {
         self.coded("1 or 0", |code| match code {
             0 => Some(false),
             1 => Some(true),
@@ -181,15 +237,25 @@ impl<'a> Reader<'a> {
         })
     }
 
-    /// An int that counts the items after it: 0 or more.
-    pub(crate) fn count(&mut self) -> Result<usize, DecodeError> {
+    /// The next argument, an int that counts the items after it: 0 or
+    /// more.
+    ///
+    /// # Errors
+    ///
+    /// When no argument is left, or the next one is not an int of 0 or
+    /// more.
+    pub fn count(&mut self) -> Result<usize, DecodeError> {
         let index = self.index;
         let count = self.int()?;
         usize::try_from(count).map_err(|_| self.invalid(index, format!("{count} is no count")))
     }
 
     /// Every argument left, read by `read` until none is left.
-    pub(crate) fn rest<T>(
+    ///
+    /// # Errors
+    ///
+    /// The first error of `read`.
+    pub fn rest<T>(
         &mut self,
         read: impl Fn(&mut Self) -> Result<T, DecodeError>,
     ) -> Result<Vec<T>, DecodeError> {
@@ -221,43 +287,57 @@ impl<'a> Reader<'a> {
     }
 }
 
-/// The arguments of one message, as they are written.
-#[derive(Default)]
-pub(crate) struct Writer {
+/// The arguments of one message, as a [`Payload`] writes them.
+pub struct Writer {
     args: Vec<RawArg>,
 }
 
 impl Writer {
-    pub(crate) fn int(&mut self, value: i32) {
+    pub(crate) fn new() -> Self {
+        Self { args: Vec::new() }
+    }
+
+    /// Writes an int.
+    pub fn int(&mut self, value: i32) {
         self.args.push(RawArg::Int(value));
     }
 
-    pub(crate) fn float(&mut self, value: f32) {
+    /// Writes a float.
+    pub fn float(&mut self, value: f32) {
         self.args.push(RawArg::Float(value));
     }
 
-    pub(crate) fn double(&mut self, value: f64) {
+    /// Writes a double.
+    pub fn double(&mut self, value: f64) {
         self.args.push(RawArg::Double(value));
     }
 
-    pub(crate) fn string(&mut self, value: &str) {
+    /// Writes a string. It travels up to its first NUL byte.
+    pub fn string(&mut self, value: &str) {
         self.args.push(RawArg::String(value.to_owned()));
     }
 
-    pub(crate) fn blob(&mut self, value: Vec<u8>) {
+    /// Writes a blob.
+    pub fn blob(&mut self, value: Vec<u8>) {
         self.args.push(RawArg::Blob(value));
     }
 
-    pub(crate) fn flag(&mut self, value: bool) {
+    /// Writes a flag, as the int 1 or 0.
+    pub fn flag(&mut self, value: bool) {
         self.int(i32::from(value));
     }
 
-    /// The length of a list, as the int that counts it.
-    pub(crate) fn count(&mut self, len: usize) {
+    /// Writes the length of a list, as the int that counts it.
+    ///
+    /// # Panics
+    ///
+    /// When `len` is more than `i32::MAX`, which no OSC packet holds.
+    pub fn count(&mut self, len: usize) {
         self.int(i32::try_from(len).expect("an OSC packet holds fewer than 2^31 arguments"));
     }
 
-    pub(crate) fn push(&mut self, value: RawArg) {
+    /// Writes an argument of any type.
+    pub fn push(&mut self, value: RawArg) {
         self.args.push(value);
     }
 
@@ -266,15 +346,26 @@ impl Writer {
     }
 }
 
-/// The arguments of a message: how they are written, and how they are read.
-pub(crate) trait Payload: Sized {
+/// The arguments of a message: how they are written, and how they are
+/// read. A payload reads its arguments from the position of the reader,
+/// so payloads compose. The enum of [`messages!`](crate::messages) refuses
+/// a message with an argument left after its payload.
+pub trait Payload: Sized {
+    /// Writes the arguments.
     fn write(&self, writer: &mut Writer);
 
+    /// Reads the arguments at the position of `reader`.
+    ///
+    /// # Errors
+    ///
+    /// When an argument is missing, has another type, or has a value that
+    /// the protocol does not take.
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError>;
 }
 
 /// What a [`crate::Packet`] holds: a [`crate::Command`], a
-/// [`crate::Reply`] or a [`crate::RawMessage`]. Sealed.
+/// [`crate::Reply`], a [`crate::RawMessage`], or an enum of
+/// [`messages!`](crate::messages). Sealed.
 pub trait Message: sealed::Codec {}
 
 pub(crate) mod sealed {
@@ -299,11 +390,111 @@ pub(crate) mod sealed {
     }
 }
 
-/// Declares the enum of the commands or of the replies: one variant per
-/// address, a unit variant when the message has no arguments, a constant
-/// per address, and the dispatch by address in both directions.
+/// What [`messages!`](crate::messages) implements for each enum that it
+/// declares. The output of the macro needs it public, and nothing else
+/// does.
+#[doc(hidden)]
+pub trait Dispatch: Sized {
+    /// Every address of the enum.
+    const ADDRESSES: &'static [&'static str];
+
+    /// The address of the message.
+    fn address(&self) -> &'static str;
+
+    /// Writes the arguments of the message.
+    fn write_args(&self, writer: &mut Writer);
+
+    /// Reads the arguments of the message at `address`.
+    ///
+    /// # Errors
+    ///
+    /// When the enum has no message at `address`, or its arguments do not
+    /// read.
+    fn read_args(address: &str, reader: &mut Reader<'_>) -> Result<Self, DecodeError>;
+}
+
+impl<T: Dispatch> sealed::Codec for T {
+    fn to_raw(&self) -> RawMessage {
+        let mut writer = Writer::new();
+        self.write_args(&mut writer);
+        RawMessage {
+            address: self.address().to_owned(),
+            args: writer.finish(),
+        }
+    }
+
+    fn from_osc(message: &OscMessage) -> Result<Self, DecodeError> {
+        let mut reader = Reader::new(&message.addr, &message.args);
+        let value = T::read_args(&message.addr, &mut reader)?;
+        reader.finish()?;
+        Ok(value)
+    }
+
+    fn from_raw(raw: &RawMessage) -> Result<Self, DecodeError> {
+        // The address ends at its first NUL byte, as `osc_message` writes it.
+        let address = up_to_nul(&raw.address);
+        if !T::ADDRESSES.contains(&address) {
+            return Err(unknown_address(address));
+        }
+        Self::from_osc(&osc_message(raw))
+    }
+}
+
+impl<T: Dispatch> Message for T {}
+
+/// The bytes of `message`, as one OSC message.
+#[doc(hidden)]
+#[must_use]
+pub fn encode<T: Dispatch>(message: &T) -> Vec<u8> {
+    encode_message(sealed::Codec::to_osc(message))
+}
+
+/// The message in `bytes`, which must hold exactly one OSC message.
+///
+/// # Errors
+///
+/// When the bytes are not one OSC message, or not a message of `T`.
+#[doc(hidden)]
+pub fn decode<T: Dispatch>(bytes: &[u8]) -> Result<T, DecodeError> {
+    <T as sealed::Codec>::from_osc(&decode_message(bytes)?)
+}
+
+/// The message as its address and typed arguments.
+#[doc(hidden)]
+#[must_use]
+pub fn to_raw<T: Dispatch>(message: &T) -> RawMessage {
+    sealed::Codec::to_raw(message)
+}
+
+/// The message in `raw`, decoded as strictly as [`decode`] decodes bytes.
+///
+/// # Errors
+///
+/// When `raw` is not a message of `T`.
+#[doc(hidden)]
+pub fn from_raw<T: Dispatch>(raw: &RawMessage) -> Result<T, DecodeError> {
+    <T as sealed::Codec>::from_raw(raw)
+}
+
+/// The error of a message at `address`, which the enum does not have.
+#[doc(hidden)]
+#[must_use]
+pub fn unknown_address(address: &str) -> DecodeError {
+    DecodeError::new(address, DecodeErrorKind::UnknownAddress)
+}
+
+/// Declares an enum of OSC messages: one variant per address, a unit
+/// variant when the message has no arguments, a constant per address, and
+/// the dispatch by address in both directions. `Command` and `Reply` are
+/// enums of it, and an app declares its own: see
+/// [Custom messages](crate#custom-messages).
+#[macro_export]
 macro_rules! messages {
+    (serde; $(#[$meta:meta])* $vis:vis enum $($rest:tt)*) => {
+        $crate::messages! { @cfg [all()] $(#[$meta])* $vis enum $($rest)* }
+    };
     (
+        @cfg [$cfg:meta]
         $(#[$meta:meta])*
         $vis:vis enum $name:ident {
             $(
@@ -314,12 +505,12 @@ macro_rules! messages {
     ) => {
         $(#[$meta])*
         #[derive(Clone, Debug, PartialEq)]
-        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-        #[cfg_attr(feature = "serde", serde(tag = "address", content = "args"))]
+        #[cfg_attr($cfg, derive(serde::Serialize, serde::Deserialize))]
+        #[cfg_attr($cfg, serde(tag = "address", content = "args"))]
         $vis enum $name {
             $(
                 $(#[$variant_meta])*
-                #[cfg_attr(feature = "serde", serde(rename = $address))]
+                #[cfg_attr($cfg, serde(rename = $address))]
                 $variant $(($payload))?,
             )*
         }
@@ -353,8 +544,8 @@ macro_rules! messages {
             /// On a list of more than `i32::MAX` values, which no OSC packet
             /// holds.
             #[must_use]
-            pub fn encode(&self) -> Vec<u8> {
-                $crate::packet::encode_message(<Self as $crate::codec::sealed::Codec>::to_osc(self))
+            pub fn encode(&self) -> ::std::vec::Vec<u8> {
+                $crate::__private::encode(self)
             }
 
             /// The message in `bytes`, which must hold exactly one OSC
@@ -365,16 +556,15 @@ macro_rules! messages {
             /// When the bytes are not one OSC message, or not a message of
             /// this type. [`DecodeErrorKind`]($crate::DecodeErrorKind) says
             /// which.
-            pub fn decode(bytes: &[u8]) -> Result<Self, $crate::DecodeError> {
-                let message = $crate::packet::decode_message(bytes)?;
-                <Self as $crate::codec::sealed::Codec>::from_osc(&message)
+            pub fn decode(bytes: &[u8]) -> ::std::result::Result<Self, $crate::DecodeError> {
+                $crate::__private::decode(bytes)
             }
 
             /// The message as its address and typed arguments. See
-            /// [Raw messages](crate#raw-messages).
+            /// [Raw messages]($crate#raw-messages).
             #[must_use]
             pub fn to_raw(&self) -> $crate::RawMessage {
-                <Self as $crate::codec::sealed::Codec>::to_raw(self)
+                $crate::__private::to_raw(self)
             }
 
             /// The message in `raw`, decoded as strictly as
@@ -384,59 +574,61 @@ macro_rules! messages {
             ///
             /// When `raw` is not a message of this type.
             /// [`DecodeErrorKind`]($crate::DecodeErrorKind) says which.
-            pub fn from_raw(raw: &$crate::RawMessage) -> Result<Self, $crate::DecodeError> {
-                <Self as $crate::codec::sealed::Codec>::from_raw(raw)
+            pub fn from_raw(
+                raw: &$crate::RawMessage,
+            ) -> ::std::result::Result<Self, $crate::DecodeError> {
+                $crate::__private::from_raw(raw)
             }
         }
 
-        impl $crate::codec::Message for $name {}
+        impl $crate::__private::Dispatch for $name {
+            const ADDRESSES: &'static [&'static str] = <$name>::ADDRESSES;
 
-        impl $crate::codec::sealed::Codec for $name {
-            fn to_raw(&self) -> $crate::RawMessage {
-                let mut writer = $crate::codec::Writer::default();
+            fn address(&self) -> &'static str {
+                <$name>::address(self)
+            }
+
+            // An enum of unit variants alone writes and reads no argument.
+            #[allow(unused_variables)]
+            fn write_args(&self, writer: &mut $crate::Writer) {
                 match self {
                     $(
-                        Self::$variant $(($crate::codec::messages!(@bind payload $payload)))? => {
-                            $($crate::codec::messages!(@write writer payload $payload);)?
+                        Self::$variant $(($crate::messages!(@bind payload $payload)))? => {
+                            $(<$payload as $crate::Payload>::write(payload, writer);)?
                         }
                     )*
-                }
-                $crate::RawMessage {
-                    address: self.address().to_owned(),
-                    args: writer.finish(),
                 }
             }
 
-            fn from_osc(message: &rosc::OscMessage) -> Result<Self, $crate::DecodeError> {
-                let mut reader = $crate::codec::Reader::new(&message.addr, &message.args);
-                let value = match message.addr.as_str() {
-                    $(
-                        Self::$constant => {
-                            $crate::codec::messages!(@read reader $variant $($payload)?)
-                        }
-                    )*
-                    _ => return Err(reader.error($crate::DecodeErrorKind::UnknownAddress)),
-                };
-                reader.finish()?;
-                Ok(value)
+            #[allow(unused_variables)]
+            fn read_args(
+                address: &str,
+                reader: &mut $crate::Reader<'_>,
+            ) -> ::std::result::Result<Self, $crate::DecodeError> {
+                ::std::result::Result::Ok(match address {
+                    $(Self::$constant => $crate::messages!(@read reader $variant $($payload)?),)*
+                    _ => {
+                        return ::std::result::Result::Err($crate::__private::unknown_address(
+                            address,
+                        ));
+                    }
+                })
             }
         }
     };
     (@bind $binding:ident $payload:ty) => {
         $binding
     };
-    (@write $writer:ident $binding:ident $payload:ty) => {
-        <$payload as $crate::codec::Payload>::write($binding, &mut $writer)
-    };
     (@read $reader:ident $variant:ident) => {
         Self::$variant
     };
     (@read $reader:ident $variant:ident $payload:ty) => {
-        Self::$variant(<$payload as $crate::codec::Payload>::read(&mut $reader)?)
+        Self::$variant(<$payload as $crate::Payload>::read($reader)?)
+    };
+    ($(#[$meta:meta])* $vis:vis enum $($rest:tt)*) => {
+        $crate::messages! { @cfg [any()] $(#[$meta])* $vis enum $($rest)* }
     };
 }
-
-pub(crate) use messages;
 
 /// Declares an enum of the values that one int argument can code.
 macro_rules! coded {

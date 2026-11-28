@@ -14,11 +14,12 @@ pub mod unit_generator;
 use rosc::{OscBundle, OscPacket, OscType};
 
 use crate::codec::sealed::Codec;
-use crate::codec::{Reader, Writer, messages};
+use crate::codec::{Reader, Writer};
 use crate::error::{DecodeError, DecodeErrorKind};
 use crate::packet::{Timetag, decode_osc, encode_osc};
 
-messages! {
+crate::messages! {
+    @cfg [feature = "serde"]
     /// A command for scsynth: one variant per command of the Server Command
     /// Reference, except those under [Left out](crate#left-out).
     #[non_exhaustive]

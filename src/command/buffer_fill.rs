@@ -5,7 +5,7 @@
 
 use super::top_level::read_plugin_args;
 use crate::argument::Argument;
-use crate::codec::{Reader, Writer};
+use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
 use crate::types::BufferId;
 

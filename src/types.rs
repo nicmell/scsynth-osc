@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use rosc::OscType;
 
-use crate::codec::{Reader, Writer, coded, tag};
+use crate::codec::{Payload, Reader, Writer, coded, tag};
 use crate::error::DecodeError;
 use crate::raw::RawArg;
 
@@ -27,13 +27,15 @@ impl NodeId {
     /// In a command, -1 names the node that the server created last. It is
     /// how a client reaches a node whose ID the server picked.
     pub const RECENT: Self = Self(-1);
+}
 
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        reader.int().map(Self)
+impl Payload for NodeId {
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.0);
     }
 
-    pub(crate) fn write(self, writer: &mut Writer) {
-        writer.int(self.0);
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+        reader.int().map(Self)
     }
 }
 
@@ -66,15 +68,17 @@ impl NewNodeId {
     pub fn get(self) -> i32 {
         self.0
     }
+}
 
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for NewNodeId {
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.0);
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         let index = reader.index();
         let id = reader.int()?;
         Self::try_from(id).map_err(|error| reader.invalid(index, error.to_string()))
-    }
-
-    pub(crate) fn write(self, writer: &mut Writer) {
-        writer.int(self.0);
     }
 }
 
@@ -112,8 +116,12 @@ coded! {
     }
 }
 
-impl AddAction {
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for AddAction {
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.code());
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         reader.coded("an add action, 0 to 4", Self::from_code)
     }
 }
@@ -132,8 +140,12 @@ coded! {
     }
 }
 
-impl OrderAction {
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for OrderAction {
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.code());
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         reader.coded("an add action of /n_order, 0 to 3", Self::from_code)
     }
 }
@@ -156,20 +168,20 @@ pub enum Control {
     Name(String),
 }
 
-impl Control {
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for Control {
+    fn write(&self, writer: &mut Writer) {
+        match self {
+            Self::Index(index) => writer.int(*index),
+            Self::Name(name) => writer.string(name),
+        }
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         const EXPECTED: &str = "a control index or name";
         match reader.any(EXPECTED)? {
             OscType::Int(index) => Ok(Self::Index(*index)),
             OscType::String(name) => Ok(Self::Name(name.clone())),
-            other => Err(reader.wrong(other, EXPECTED)),
-        }
-    }
-
-    pub(crate) fn write(&self, writer: &mut Writer) {
-        match self {
-            Self::Index(index) => writer.int(*index),
-            Self::Name(name) => writer.string(name),
+            other => Err(reader.wrong_osc(other, EXPECTED)),
         }
     }
 }
@@ -207,23 +219,25 @@ pub enum Number {
     Float(f32),
 }
 
-impl Number {
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for Number {
+    fn write(&self, writer: &mut Writer) {
+        match self {
+            Self::Int(value) => writer.int(*value),
+            Self::Float(value) => writer.float(*value),
+        }
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         const EXPECTED: &str = "an int or a float";
         match reader.any(EXPECTED)? {
             OscType::Int(value) => Ok(Self::Int(*value)),
             OscType::Float(value) => Ok(Self::Float(*value)),
-            other => Err(reader.wrong(other, EXPECTED)),
+            other => Err(reader.wrong_osc(other, EXPECTED)),
         }
     }
+}
 
-    pub(crate) fn write(self, writer: &mut Writer) {
-        match self {
-            Self::Int(value) => writer.int(value),
-            Self::Float(value) => writer.float(value),
-        }
-    }
-
+impl Number {
     /// The same value with the same tag: a NaN equals itself here.
     pub(crate) fn same(self, other: Self) -> bool {
         match (self, other) {
@@ -369,8 +383,8 @@ pub enum ArrayElement {
     Bus(BusMapping),
 }
 
-impl ControlValue {
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for ControlValue {
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         const EXPECTED: &str = "a control value: an int, a float, a bus mapping or an array";
         let index = reader.index();
         match reader.any(EXPECTED)? {
@@ -383,11 +397,11 @@ impl ControlValue {
                 .map(|element| ArrayElement::read(reader, index, element))
                 .collect::<Result<_, _>>()
                 .map(Self::Array),
-            other => Err(reader.wrong(other, EXPECTED)),
+            other => Err(reader.wrong_osc(other, EXPECTED)),
         }
     }
 
-    pub(crate) fn write(&self, writer: &mut Writer) {
+    fn write(&self, writer: &mut Writer) {
         writer.push(match self {
             Self::Int(value) => RawArg::Int(*value),
             Self::Float(value) => RawArg::Float(*value),
@@ -466,17 +480,19 @@ impl ControlSetting {
             value: value.into(),
         }
     }
+}
 
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for ControlSetting {
+    fn write(&self, writer: &mut Writer) {
+        self.control.write(writer);
+        self.value.write(writer);
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
             control: Control::read(reader)?,
             value: ControlValue::read(reader)?,
         })
-    }
-
-    pub(crate) fn write(&self, writer: &mut Writer) {
-        self.control.write(writer);
-        self.value.write(writer);
     }
 }
 
@@ -502,15 +518,17 @@ impl BufferId {
     pub fn get(self) -> i32 {
         self.0
     }
+}
 
-    pub(crate) fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
+impl Payload for BufferId {
+    fn write(&self, writer: &mut Writer) {
+        writer.int(self.0);
+    }
+
+    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         let index = reader.index();
         let buffer = reader.int()?;
         Self::try_from(buffer).map_err(|error| reader.invalid(index, error.to_string()))
-    }
-
-    pub(crate) fn write(self, writer: &mut Writer) {
-        writer.int(self.0);
     }
 }
 
@@ -581,11 +599,11 @@ impl Value for f32 {
 
 impl Value for Number {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        Number::read(reader)
+        <Self as Payload>::read(reader)
     }
 
     fn write(self, writer: &mut Writer) {
-        Number::write(self, writer);
+        Payload::write(&self, writer);
     }
 }
 

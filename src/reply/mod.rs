@@ -11,10 +11,10 @@ pub mod synth;
 pub mod top_level;
 pub mod trigger;
 
-use crate::codec::messages;
 use crate::command::top_level::SyncId;
 
-messages! {
+crate::messages! {
+    @cfg [feature = "serde"]
     /// A message from scsynth: one variant per message of the Server Command
     /// Reference that scsynth sends, except those under
     /// [Left out](crate#left-out).
