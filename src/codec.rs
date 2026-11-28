@@ -300,15 +300,15 @@ pub(crate) mod sealed {
 }
 
 /// Declares the enum of the commands or of the replies: one variant per
-/// address, a unit variant when the message has no arguments, and the
-/// dispatch by address in both directions.
+/// address, a unit variant when the message has no arguments, a constant
+/// per address, and the dispatch by address in both directions.
 macro_rules! messages {
     (
         $(#[$meta:meta])*
-        $name:ident {
+        $vis:vis enum $name:ident {
             $(
                 $(#[$variant_meta:meta])*
-                $address:literal => $variant:ident $(($payload:ty))?
+                $address:literal as $constant:ident => $variant:ident $(($payload:ty))?
             ),* $(,)?
         }
     ) => {
@@ -316,7 +316,7 @@ macro_rules! messages {
         #[derive(Clone, Debug, PartialEq)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         #[cfg_attr(feature = "serde", serde(tag = "address", content = "args"))]
-        pub enum $name {
+        $vis enum $name {
             $(
                 $(#[$variant_meta])*
                 #[cfg_attr(feature = "serde", serde(rename = $address))]
@@ -325,11 +325,24 @@ macro_rules! messages {
         }
 
         impl $name {
+            $(
+                #[doc = concat!("The address `", $address, "`.")]
+                pub const $constant: &'static str = $address;
+            )*
+
+            /// Every address of the enum, in the order of its variants.
+            pub const ADDRESSES: &'static [&'static str] = &[$($address),*];
+
+            /// The names of the constants of [`Self::ADDRESSES`], in its
+            /// order.
+            #[doc(hidden)]
+            pub const ADDRESS_NAMES: &'static [&'static str] = &[$(stringify!($constant)),*];
+
             /// The OSC address of the message.
             #[must_use]
             pub fn address(&self) -> &'static str {
                 match self {
-                    $(Self::$variant { .. } => $address,)*
+                    $(Self::$variant { .. } => Self::$constant,)*
                 }
             }
 
@@ -397,7 +410,11 @@ macro_rules! messages {
             fn from_osc(message: &rosc::OscMessage) -> Result<Self, $crate::DecodeError> {
                 let mut reader = $crate::codec::Reader::new(&message.addr, &message.args);
                 let value = match message.addr.as_str() {
-                    $($address => $crate::codec::messages!(@read reader $variant $($payload)?),)*
+                    $(
+                        Self::$constant => {
+                            $crate::codec::messages!(@read reader $variant $($payload)?)
+                        }
+                    )*
                     _ => return Err(reader.error($crate::DecodeErrorKind::UnknownAddress)),
                 };
                 reader.finish()?;
@@ -735,5 +752,40 @@ mod tests {
                 found: 'b'
             }
         );
+    }
+
+    /// `address` without its slash, with `.` as `_`, a `_` before each
+    /// capital that follows a lowercase letter, in capitals.
+    fn upper_snake(address: &str) -> String {
+        let mut name = String::new();
+        let mut after_lowercase = false;
+        for character in address.trim_start_matches('/').chars() {
+            if character.is_ascii_uppercase() && after_lowercase {
+                name.push('_');
+            }
+            after_lowercase = character.is_ascii_lowercase();
+            name.push(match character {
+                '.' => '_',
+                other => other.to_ascii_uppercase(),
+            });
+        }
+        name
+    }
+
+    #[test]
+    fn every_constant_is_its_address_in_upper_snake_case() {
+        assert_eq!(upper_snake("/g_queryTree.reply"), "G_QUERY_TREE_REPLY");
+        assert_eq!(upper_snake("/dumpOSC"), "DUMP_OSC");
+        for (names, addresses) in [
+            (Command::ADDRESS_NAMES, Command::ADDRESSES),
+            (Reply::ADDRESS_NAMES, Reply::ADDRESSES),
+        ] {
+            assert_eq!(names.len(), addresses.len());
+            for (name, address) in names.iter().zip(addresses) {
+                assert_eq!(*name, upper_snake(address), "{address}");
+            }
+        }
+        assert_eq!(Command::S_NEW, "/s_new");
+        assert_eq!(Reply::STATUS_REPLY, "/status.reply");
     }
 }

@@ -70,6 +70,34 @@ its address, such as `command::synth_def::DLoad` for `/d_load`.
   `IndexFill` and `IndexRange`. Their values are `f32`, or `Number` where
   the reference takes an int too.
 
+Each address is also a constant of its enum, named after the address in
+capitals: `Command::S_NEW` is `"/s_new"`, and `Reply::STATUS_REPLY` is
+`"/status.reply"`. A `_` stands for a `.`, and goes before a capital that
+follows a lowercase letter, as in `Command::G_QUERY_TREE`. An address of
+both directions has a constant on each enum: `Command::N_SET` and
+`Reply::N_SET`. `ADDRESSES` lists the addresses of an enum, in the order
+of its variants. The constants also work as patterns:
+
+```rust
+use scsynth_osc::{Command, RawMessage, Reply};
+
+assert_eq!(Command::S_NEW, "/s_new");
+assert!(Reply::ADDRESSES.contains(&Reply::STATUS_REPLY));
+
+fn is_node_notification(raw: &RawMessage) -> bool {
+    matches!(
+        raw.address.as_str(),
+        Reply::N_GO | Reply::N_END | Reply::N_OFF | Reply::N_ON | Reply::N_MOVE | Reply::N_INFO
+    )
+}
+
+let go = RawMessage {
+    address: "/n_go".to_owned(),
+    args: Vec::new(),
+};
+assert!(is_node_notification(&go));
+```
+
 ## Raw messages
 
 A `RawMessage` is one OSC message as its address and its typed arguments,
