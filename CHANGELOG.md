@@ -7,6 +7,12 @@
 - The messages of sc-app3's pump name no session, because the websocket of
   a page belongs to one session. `/loadRoot`, `/unloadRoot` and their
   `.success` answers take no argument.
+- The page gives the node ids of a Dirt: `/loadDirt` carries a `block` of
+  node ids.
+- The messages of a Dirt name the group of its element by its node, in
+  place of the id of the element: `/loadDirt`, `/dirt.play` and their
+  answers, whose types are `reply::custom::Dirt` and
+  `reply::custom::DirtFailure`.
 
 ### Added
 
@@ -22,16 +28,6 @@
 - The streams of a session: `/stream.open`, `/stream.close` and the
   answers of an open. `/stream.frames` carries the frames of a stream, as
   a blob of little-endian `f32`.
-- The synth definitions of a page: `/loadSynthdef` with the bytes of a
-  synth definition file, `/unloadSynthdef`, and the `.success` and
-  `.failure` answers of both, which name the definition. A name takes 1 to
-  255 bytes, and the bytes cannot be empty.
-- The nodes of the elements of a plugin: `/loadGroup` and `/loadSynth`,
-  with the id of the element and the id of its parent, and for a synth its
-  definition and its controls. Their `.success` carries the node, and
-  their `.failure` a reason. An id cannot be empty.
-- The unloads of those nodes: `/unloadGroup` and `/unloadSynth`, with the
-  id of the element, and the `.success` and `.failure` answers of both.
 - The Dirt of an element of a plugin: `/loadDirt`, and its `.success` and
   `.failure` answers. `/loadDirt` carries the number of orbits and the
   first output bus of the Dirt. `/dirt.play` carries a sound at a cycle,
@@ -42,12 +38,15 @@
   `/getTempo` carries the cycles per second, a cycle and its server time.
   `/setTempo` carries the cycles per second, and the pump sends
   `/tempoChange` with the new tempo to every page.
-- The controls of the synth of an element of a plugin: `/setControl`,
-  with controls as in `/loadSynth`, and `/getControl`, with ranges as in
-  `/s_getn`. Neither gets an answer of its own. The pump sends `/control`
-  to every page, with the ranges and the values of an `/n_setn` of
-  scsynth. An id cannot be empty, and each message carries one control or
-  more.
+
+### Removed
+
+- `/loadRoot`, `/unloadRoot`, their four answers and `RootFailure`: the
+  pump of sc-app3 keeps the root group of its session by itself.
+- `/setControl`, `/getControl`, `/control` and their types: a page of
+  sc-app3 writes and reads the controls of its synths with `/n_set` and
+  `/s_getn`, which its pump passes to scsynth.
+  `command::custom::ADDRESSES` lists 15 addresses.
 
 ## 0.2.1 (2026-11-22)
 

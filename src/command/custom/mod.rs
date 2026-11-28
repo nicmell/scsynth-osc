@@ -3,45 +3,25 @@
 //! [The protocol of sc-app3's pump](crate#the-protocol-of-sc-app3s-pump).
 
 mod clock;
-mod controls;
 mod dirt;
 mod groups;
-mod nodes;
 mod streams;
-mod synthdefs;
 mod tempo;
 
 pub use clock::ClockPing;
-pub use controls::{GetControl, SetControl};
 pub use dirt::{DirtParameter, DirtPlay, DirtValue, LoadDirt};
 pub use groups::Plugin;
-pub use nodes::{LoadGroup, LoadSynth, Node};
 pub use streams::{Stream, StreamOpen};
-pub use synthdefs::{LoadSynthdef, Synthdef};
 pub use tempo::SetTempo;
-
-pub(crate) use controls::read_controls;
-pub(crate) use nodes::read_id;
-pub(crate) use synthdefs::read_name;
 
 /// The addresses of the commands of the pump. The pump reads them, and
 /// never passes them on to scsynth.
-pub const ADDRESSES: [&str; 19] = [
-    "/loadRoot",
-    "/unloadRoot",
+pub const ADDRESSES: [&str; 9] = [
     "/loadPlugin",
     "/unloadPlugin",
     "/clock.ping",
     "/stream.open",
     "/stream.close",
-    "/loadSynthdef",
-    "/unloadSynthdef",
-    "/loadGroup",
-    "/loadSynth",
-    "/unloadGroup",
-    "/unloadSynth",
-    "/setControl",
-    "/getControl",
     "/loadDirt",
     "/dirt.play",
     "/getTempo",
@@ -78,8 +58,6 @@ mod tests {
 
     use super::*;
     use crate::Command;
-    use crate::command::synth::RangeRequest;
-    use crate::types::{Control, ControlSetting};
 
     #[test]
     fn the_addresses_of_the_pump_are_those_of_its_commands() {
@@ -91,74 +69,27 @@ mod tests {
             bus: 256,
             channels: 1,
         };
-        let synthdef = Synthdef {
-            plugin: other,
-            name: "a1b2/sine".to_owned(),
-        };
-        let load = LoadSynthdef {
-            plugin: other,
-            name: synthdef.name.clone(),
-            data: vec![1],
-        };
-        let group = LoadGroup {
-            plugin: other,
-            id: "a".to_owned(),
-            parent: String::new(),
-        };
-        let synth = LoadSynth {
-            plugin: other,
-            id: "b".to_owned(),
-            parent: "a".to_owned(),
-            def: "c".to_owned(),
-            controls: Vec::new(),
-        };
-        let node = Node {
-            plugin: other,
-            id: "a".to_owned(),
-        };
-        let set = SetControl {
-            plugin: other,
-            id: "b".to_owned(),
-            controls: vec![ControlSetting::new("freq", 1.0)],
-        };
-        let get = GetControl {
-            plugin: other,
-            id: "b".to_owned(),
-            controls: vec![RangeRequest {
-                control: Control::from("freq"),
-                count: 1,
-            }],
-        };
         let dirt = LoadDirt {
             plugin: other,
-            id: "a".to_owned(),
+            node: 2,
+            block: 0,
             orbits: 1,
             out: 0,
         };
         let sound = DirtPlay {
             plugin: other,
-            id: "a".to_owned(),
+            node: 2,
             cycle: 0.0,
             index: 0,
             span: 1.0,
             parameters: vec![DirtParameter::new("s", "bd")],
         };
         let commands = [
-            Command::LoadRoot,
-            Command::UnloadRoot,
             Command::LoadPlugin(plugin),
             Command::UnloadPlugin(plugin),
             Command::ClockPing(ClockPing { sent_ms: 0.0 }),
             Command::StreamOpen(open),
             Command::StreamClose(stream),
-            Command::LoadSynthdef(load),
-            Command::UnloadSynthdef(synthdef),
-            Command::LoadGroup(group),
-            Command::LoadSynth(synth),
-            Command::UnloadGroup(node.clone()),
-            Command::UnloadSynth(node),
-            Command::SetControl(set),
-            Command::GetControl(get),
             Command::LoadDirt(dirt),
             Command::DirtPlay(sound),
             Command::GetTempo,

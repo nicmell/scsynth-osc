@@ -1,5 +1,5 @@
-//! The answers of sc-app3's pump about the groups of a session: its root
-//! group, and the group of each of its plugins.
+//! The answers of sc-app3's pump about the group of each plugin of a
+//! session.
 
 use uuid::Uuid;
 
@@ -10,26 +10,6 @@ use crate::error::DecodeError;
 /// The arguments of `/loadPlugin.success` and `/unloadPlugin.success`: see
 /// [`crate::command::custom::Plugin`].
 pub type Plugin = crate::command::custom::Plugin;
-
-/// The arguments of `/loadRoot.failure` and `/unloadRoot.failure`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct RootFailure {
-    /// Why the command failed.
-    pub reason: String,
-}
-
-impl Payload for RootFailure {
-    fn write(&self, writer: &mut Writer) {
-        writer.string(&self.reason);
-    }
-
-    fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
-        Ok(Self {
-            reason: reader.string()?,
-        })
-    }
-}
 
 /// The arguments of `/loadPlugin.failure` and `/unloadPlugin.failure`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -76,22 +56,6 @@ mod tests {
 
     #[test]
     fn the_answers_of_the_pump_have_their_wire_form() {
-        assert_wire(&Reply::LoadRootSuccess, "/loadRoot.success", vec![]);
-        assert_wire(&Reply::UnloadRootSuccess, "/unloadRoot.success", vec![]);
-        let failure = RootFailure {
-            reason: "scsynth did not answer in time.".to_owned(),
-        };
-        let wire = || vec![text("scsynth did not answer in time.")];
-        assert_wire(
-            &Reply::LoadRootFailure(failure.clone()),
-            "/loadRoot.failure",
-            wire(),
-        );
-        assert_wire(
-            &Reply::UnloadRootFailure(failure),
-            "/unloadRoot.failure",
-            wire(),
-        );
         let plugin = Plugin {
             plugin: uuid(PLUGIN),
         };
@@ -126,9 +90,9 @@ mod tests {
     #[test]
     fn a_failure_names_its_reason() {
         assert_eq!(
-            decode_error::<Reply>("/loadRoot.failure", vec![]),
+            decode_error::<Reply>("/loadPlugin.failure", vec![text(PLUGIN)]),
             DecodeErrorKind::Missing {
-                index: 0,
+                index: 1,
                 expected: "a string"
             }
         );

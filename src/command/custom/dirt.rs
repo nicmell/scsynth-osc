@@ -1,11 +1,12 @@
 //! The commands of sc-app3's pump about the Dirt of an element of a
-//! plugin: the Dirt that the pump starts in the group of the element, and
+//! plugin: the Dirt that the pump starts in the group of the element, by
+//! the node of that group, on a block of node ids that the page gives, and
 //! the sounds that it plays on it.
 
 use rosc::OscType;
 use uuid::Uuid;
 
-use super::{read_id, read_uuid, write_uuid};
+use super::{read_uuid, write_uuid};
 use crate::codec::{Payload, Reader, Writer};
 use crate::error::DecodeError;
 use crate::raw::RawArg;
@@ -17,8 +18,10 @@ use crate::raw::RawArg;
 pub struct LoadDirt {
     /// The plugin.
     pub plugin: Uuid,
-    /// The id of the element. It cannot be empty.
-    pub id: String,
+    /// The node id of the group of the element.
+    pub node: i32,
+    /// The block of node ids of the Dirt.
+    pub block: i32,
     /// The number of orbits of the Dirt.
     pub orbits: i32,
     /// The first of the output buses of the Dirt.
@@ -28,7 +31,8 @@ pub struct LoadDirt {
 impl Payload for LoadDirt {
     fn write(&self, writer: &mut Writer) {
         write_uuid(writer, self.plugin);
-        writer.string(&self.id);
+        writer.int(self.node);
+        writer.int(self.block);
         writer.int(self.orbits);
         writer.int(self.out);
     }
@@ -36,7 +40,8 @@ impl Payload for LoadDirt {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
             plugin: read_uuid(reader)?,
-            id: read_id(reader)?,
+            node: reader.int()?,
+            block: reader.int()?,
             orbits: reader.int()?,
             out: reader.int()?,
         })
@@ -50,8 +55,8 @@ impl Payload for LoadDirt {
 pub struct DirtPlay {
     /// The plugin.
     pub plugin: Uuid,
-    /// The id of the element. It cannot be empty.
-    pub id: String,
+    /// The node id of the group of the element.
+    pub node: i32,
     /// The cycle at which the sound starts.
     pub cycle: f64,
     /// The number of sounds of the element before this one that start at
@@ -66,7 +71,7 @@ pub struct DirtPlay {
 impl Payload for DirtPlay {
     fn write(&self, writer: &mut Writer) {
         write_uuid(writer, self.plugin);
-        writer.string(&self.id);
+        writer.int(self.node);
         writer.double(self.cycle);
         writer.int(self.index);
         writer.double(self.span);
@@ -79,7 +84,7 @@ impl Payload for DirtPlay {
     fn read(reader: &mut Reader<'_>) -> Result<Self, DecodeError> {
         Ok(Self {
             plugin: read_uuid(reader)?,
-            id: read_id(reader)?,
+            node: reader.int()?,
             cycle: reader.double()?,
             index: read_index(reader)?,
             span: reader.double()?,
@@ -219,7 +224,7 @@ mod tests {
 
     const PLUGIN: &str = "0b4e1a2c-9d7f-4e3a-8b6c-1f2e3d4c5b6a";
 
-    const ELEMENT: &str = "5f0a3c9e21d47";
+    const NODE: i32 = 67_240_961;
 
     const VALUE: &str = "an int, a float, a double or a string";
 
@@ -231,12 +236,12 @@ mod tests {
         Text(value.to_owned())
     }
 
-    /// The arguments of a sound of the element `a` at cycle 4 with `index`,
-    /// then `tail`.
+    /// The arguments of a sound of the group [`NODE`] at cycle 4 with
+    /// `index`, then `tail`.
     fn sound(index: i32, tail: Vec<OscType>) -> Vec<OscType> {
         let mut args = vec![
             text(PLUGIN),
-            text("a"),
+            Int(NODE),
             Double(4.0),
             Int(index),
             Double(0.5),
@@ -249,18 +254,19 @@ mod tests {
     fn the_commands_of_the_dirt_have_their_wire_form() {
         let load = LoadDirt {
             plugin: uuid(PLUGIN),
-            id: ELEMENT.to_owned(),
+            node: NODE,
+            block: 1,
             orbits: 2,
             out: 0,
         };
         assert_wire(
             &Command::LoadDirt(load),
             "/loadDirt",
-            vec![text(PLUGIN), text(ELEMENT), Int(2), Int(0)],
+            vec![text(PLUGIN), Int(NODE), Int(1), Int(2), Int(0)],
         );
         let play = DirtPlay {
             plugin: uuid(PLUGIN),
-            id: ELEMENT.to_owned(),
+            node: NODE,
             cycle: 12.25,
             index: 1,
             span: 0.25,
@@ -271,13 +277,7 @@ mod tests {
                 DirtParameter::new("gain", 0.75),
             ],
         };
-        let head = vec![
-            text(PLUGIN),
-            text(ELEMENT),
-            Double(12.25),
-            Int(1),
-            Double(0.25),
-        ];
+        let head = vec![text(PLUGIN), Int(NODE), Double(12.25), Int(1), Double(0.25)];
         let mut wire = head.clone();
         wire.extend([
             text("s"),
@@ -298,18 +298,25 @@ mod tests {
     }
 
     #[test]
-    fn an_id_is_not_empty() {
+    fn a_node_is_an_int() {
         for (address, args) in [
-            ("/loadDirt", vec![text(PLUGIN), text(""), Int(1), Int(0)]),
+            (
+                "/loadDirt",
+                vec![text(PLUGIN), text("a"), Int(0), Int(1), Int(0)],
+            ),
             (
                 "/dirt.play",
-                vec![text(PLUGIN), text(""), Double(4.0), Int(0), Double(0.5)],
+                vec![text(PLUGIN), text("a"), Double(4.0), Int(0), Double(0.5)],
             ),
         ] {
-            let kind = decode_error::<Command>(address, args);
-            assert!(
-                matches!(kind, DecodeErrorKind::Invalid { index: 1, .. }),
-                "{address}: {kind:?}"
+            assert_eq!(
+                decode_error::<Command>(address, args),
+                DecodeErrorKind::WrongType {
+                    index: 1,
+                    expected: "an int",
+                    found: 's'
+                },
+                "{address}"
             );
         }
     }
@@ -324,7 +331,7 @@ mod tests {
         assert_eq!(
             decode_error::<Command>(
                 "/dirt.play",
-                vec![text(PLUGIN), text("a"), Float(4.0), Int(0), Double(0.5)]
+                vec![text(PLUGIN), Int(NODE), Float(4.0), Int(0), Double(0.5)]
             ),
             DecodeErrorKind::WrongType {
                 index: 2,

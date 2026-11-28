@@ -163,11 +163,6 @@ messages! {
         /// `/c_getn`: the server replies `/c_setn` with values of ranges of
         /// buses.
         "/c_getn" => CGetn(control_bus::CGetn),
-        /// `/loadRoot`: the pump loads the root group of the session.
-        "/loadRoot" => LoadRoot,
-        /// `/unloadRoot`: the pump releases the holds of the page, and frees
-        /// the root group of the session once nobody holds it.
-        "/unloadRoot" => UnloadRoot,
         /// `/loadPlugin`: the pump loads the group of the plugin.
         "/loadPlugin" => LoadPlugin(custom::Plugin),
         /// `/unloadPlugin`: the pump releases the page's hold on the group of
@@ -181,30 +176,6 @@ messages! {
         "/stream.open" => StreamOpen(custom::StreamOpen),
         /// `/stream.close`: the pump releases the page's hold on the stream.
         "/stream.close" => StreamClose(custom::Stream),
-        /// `/loadSynthdef`: the pump loads a synth definition into scsynth
-        /// for the plugin, and answers every page.
-        "/loadSynthdef" => LoadSynthdef(custom::LoadSynthdef),
-        /// `/unloadSynthdef`: the pump releases the page's hold on a synth
-        /// definition of the plugin, and frees it once nobody holds it.
-        "/unloadSynthdef" => UnloadSynthdef(custom::Synthdef),
-        /// `/loadGroup`: the pump makes the group of an element of the
-        /// plugin, and answers every page with its node.
-        "/loadGroup" => LoadGroup(custom::LoadGroup),
-        /// `/loadSynth`: the pump makes the synth of an element of the
-        /// plugin, and answers every page with its node.
-        "/loadSynth" => LoadSynth(custom::LoadSynth),
-        /// `/unloadGroup`: the pump releases the page's hold on the group of
-        /// an element of the plugin, and frees it once nobody holds it.
-        "/unloadGroup" => UnloadGroup(custom::Node),
-        /// `/unloadSynth`: the pump releases the page's hold on the synth of
-        /// an element of the plugin, and frees it once nobody holds it.
-        "/unloadSynth" => UnloadSynth(custom::Node),
-        /// `/setControl`: the pump sets controls of the synth of an element
-        /// of the plugin, and answers nothing of its own.
-        "/setControl" => SetControl(custom::SetControl),
-        /// `/getControl`: the pump reads controls of the synth of an element
-        /// of the plugin, and answers nothing of its own.
-        "/getControl" => GetControl(custom::GetControl),
         /// `/loadDirt`: the pump starts a Dirt in the group of an element of
         /// the plugin.
         "/loadDirt" => LoadDirt(custom::LoadDirt),

@@ -66,14 +66,6 @@ messages! {
         "/c_setn" => CSetn(control_bus::CSetn),
         /// `/tr`: a `SendTrig` unit generator triggered.
         "/tr" => Tr(trigger::Tr),
-        /// `/loadRoot.success`: the root group is ready.
-        "/loadRoot.success" => LoadRootSuccess,
-        /// `/loadRoot.failure`: the pump refused the load, or it failed.
-        "/loadRoot.failure" => LoadRootFailure(custom::RootFailure),
-        /// `/unloadRoot.success`: the root group is free.
-        "/unloadRoot.success" => UnloadRootSuccess,
-        /// `/unloadRoot.failure`: the pump refused the unload, or it failed.
-        "/unloadRoot.failure" => UnloadRootFailure(custom::RootFailure),
         /// `/loadPlugin.success`: the group of the plugin is ready.
         "/loadPlugin.success" => LoadPluginSuccess(custom::Plugin),
         /// `/loadPlugin.failure`: the pump refused the load, or it failed.
@@ -92,41 +84,14 @@ messages! {
         "/stream.open.failure" => StreamOpenFailure(custom::StreamFailure),
         /// `/stream.frames`: frames of a stream, for each of its holders.
         "/stream.frames" => StreamFrames(custom::StreamFrames),
-        /// `/loadSynthdef.success`: the synth definition is in scsynth.
-        "/loadSynthdef.success" => LoadSynthdefSuccess(custom::Synthdef),
-        /// `/loadSynthdef.failure`: the pump refused the load, or it failed.
-        "/loadSynthdef.failure" => LoadSynthdefFailure(custom::SynthdefFailure),
-        /// `/unloadSynthdef.success`: the synth definition is free.
-        "/unloadSynthdef.success" => UnloadSynthdefSuccess(custom::Synthdef),
-        /// `/unloadSynthdef.failure`: the pump refused the free, or it failed.
-        "/unloadSynthdef.failure" => UnloadSynthdefFailure(custom::SynthdefFailure),
-        /// `/loadGroup.success`: the group of the element is in scsynth.
-        "/loadGroup.success" => LoadGroupSuccess(custom::NodeLoaded),
-        /// `/loadGroup.failure`: the pump refused the load, or it failed.
-        "/loadGroup.failure" => LoadGroupFailure(custom::NodeFailure),
-        /// `/loadSynth.success`: the synth of the element is in scsynth.
-        "/loadSynth.success" => LoadSynthSuccess(custom::NodeLoaded),
-        /// `/loadSynth.failure`: the pump refused the load, or it failed.
-        "/loadSynth.failure" => LoadSynthFailure(custom::NodeFailure),
-        /// `/unloadGroup.success`: the group of the element is free.
-        "/unloadGroup.success" => UnloadGroupSuccess(custom::Node),
-        /// `/unloadGroup.failure`: the pump refused the unload, or it failed.
-        "/unloadGroup.failure" => UnloadGroupFailure(custom::NodeFailure),
-        /// `/unloadSynth.success`: the synth of the element is free.
-        "/unloadSynth.success" => UnloadSynthSuccess(custom::Node),
-        /// `/unloadSynth.failure`: the pump refused the unload, or it failed.
-        "/unloadSynth.failure" => UnloadSynthFailure(custom::NodeFailure),
         /// `/tick`: the clock synth of a session ticked.
         "/tick" => Tick(custom::Tick),
-        /// `/control`: values of controls of the synth of an element of the
-        /// plugin, as scsynth holds them, to every page.
-        "/control" => Control(custom::Controls),
         /// `/loadDirt.success`: the Dirt of the element runs.
-        "/loadDirt.success" => LoadDirtSuccess(custom::Node),
+        "/loadDirt.success" => LoadDirtSuccess(custom::Dirt),
         /// `/loadDirt.failure`: the pump refused the start, or it failed.
-        "/loadDirt.failure" => LoadDirtFailure(custom::NodeFailure),
+        "/loadDirt.failure" => LoadDirtFailure(custom::DirtFailure),
         /// `/dirt.play.failure`: the pump dropped a sound of the element.
-        "/dirt.play.failure" => DirtPlayFailure(custom::NodeFailure),
+        "/dirt.play.failure" => DirtPlayFailure(custom::DirtFailure),
         /// `/getTempo.success`: the tempo of the session, to the page that
         /// asked.
         "/getTempo.success" => GetTempoSuccess(custom::Tempo),
